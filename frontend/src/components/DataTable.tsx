@@ -66,11 +66,14 @@ export default function DataTable<T>({
     }
   }
 
+  const dataCols = columns.filter((c) => !c.key.startsWith('_'));
+  const actionCols = columns.filter((c) => c.key.startsWith('_'));
+
   return (
     <div className="card overflow-hidden">
       {searchable && (
-        <div className="px-4 py-3 border-b border-ink-200 flex items-center justify-between gap-3">
-          <div className="relative w-72 max-w-full">
+        <div className="px-3 sm:px-4 py-3 border-b border-ink-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+          <div className="relative w-full sm:w-72">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
             <input
               value={search}
@@ -85,7 +88,45 @@ export default function DataTable<T>({
           <div className="text-xs text-ink-500">{filtered.length} kayıt</div>
         </div>
       )}
-      <div className="overflow-x-auto">
+
+      {/* Mobile card list */}
+      <div className="md:hidden">
+        {pageRows.length === 0 ? (
+          <div className="px-4 py-12 text-center text-ink-400 text-sm">{empty}</div>
+        ) : (
+          <ul className="divide-y divide-ink-100">
+            {pageRows.map((row) => (
+              <li key={String(rowKey(row))} className="px-4 py-3">
+                <div className="space-y-1.5">
+                  {dataCols.map((c) => {
+                    const value = c.render ? c.render(row) : (row as any)[c.key];
+                    return (
+                      <div key={c.key} className="flex items-start gap-3 text-sm">
+                        {c.header && (
+                          <span className="text-ink-500 text-xs uppercase tracking-wide w-24 shrink-0 pt-0.5">
+                            {c.header}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1 break-words">{value ?? <span className="text-ink-400">-</span>}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {actionCols.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-ink-100 flex flex-wrap gap-1">
+                    {actionCols.map((c) => (
+                      <div key={c.key}>{c.render ? c.render(row) : null}</div>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-ink-50 border-b border-ink-200 text-left text-ink-600">
@@ -125,8 +166,9 @@ export default function DataTable<T>({
           </tbody>
         </table>
       </div>
+
       {totalPages > 1 && (
-        <div className="px-4 py-3 border-t border-ink-200 flex items-center justify-end gap-2 text-sm">
+        <div className="px-3 sm:px-4 py-3 border-t border-ink-200 flex items-center justify-end gap-2 text-sm">
           <button className="btn-secondary disabled:opacity-50" disabled={safePage <= 1} onClick={() => setPage((p) => p - 1)}>
             Önceki
           </button>

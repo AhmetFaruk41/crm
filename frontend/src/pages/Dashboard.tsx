@@ -37,16 +37,16 @@ export default function Dashboard() {
     <div>
       <PageHeader title="Anasayfa" crumbs={[{ label: 'Anasayfa' }]} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {cards.map((c) => (
           <Link to={c.link} key={c.label} className="card card-body hover:shadow transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-ink-500">{c.label}</div>
-                <div className="text-3xl font-semibold mt-1">{c.value}</div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-xs sm:text-sm text-ink-500 truncate">{c.label}</div>
+                <div className="text-2xl sm:text-3xl font-semibold mt-1">{c.value}</div>
               </div>
-              <div className="h-12 w-12 grid place-items-center rounded-full bg-ink-100 text-ink-700">
-                <c.icon size={22} />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 grid place-items-center rounded-full bg-ink-100 text-ink-700 shrink-0">
+                <c.icon size={20} />
               </div>
             </div>
           </Link>
@@ -56,14 +56,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="card card-body lg:col-span-2">
           <div className="text-sm font-semibold mb-3">Aylık Teklif Performansı</div>
-          <div className="flex items-end gap-6">
+          <div className="flex flex-wrap items-end gap-4 sm:gap-6">
             <div>
               <div className="text-xs text-ink-500">Bu Ay</div>
-              <div className="text-3xl font-semibold">{stats.thisMonth} <span className="text-base font-normal text-ink-500">teklif</span></div>
+              <div className="text-2xl sm:text-3xl font-semibold">{stats.thisMonth} <span className="text-sm sm:text-base font-normal text-ink-500">teklif</span></div>
             </div>
             <div>
               <div className="text-xs text-ink-500">Geçen Ay</div>
-              <div className="text-2xl text-ink-700">{stats.lastMonth} <span className="text-sm text-ink-500">teklif</span></div>
+              <div className="text-xl sm:text-2xl text-ink-700">{stats.lastMonth} <span className="text-sm text-ink-500">teklif</span></div>
             </div>
             <div className="ml-auto">
               {ratioGrowth === null ? (
@@ -101,11 +101,11 @@ export default function Dashboard() {
 
       <div className="card card-body">
         <div className="text-sm font-semibold mb-3">Teklif Kaynakları</div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
           {stats.byType.map((t) => (
-            <div key={t.id} className="text-center border border-ink-200 rounded-lg p-4">
-              <div className="text-2xl font-semibold">{t.cnt}</div>
-              <div className="text-xs text-ink-500 mt-1">{t.title}</div>
+            <div key={t.id} className="text-center border border-ink-200 rounded-lg p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-semibold">{t.cnt}</div>
+              <div className="text-xs text-ink-500 mt-1 break-words">{t.title}</div>
             </div>
           ))}
         </div>

@@ -160,9 +160,9 @@ export function DomainForm() {
           <Field label="E-Posta">
             <input type="email" className="input" value={d.email || ''} onChange={(e) => setD({ ...d, email: e.target.value })} />
           </Field>
-          <div className="flex gap-2 justify-end">
-            <Link to="/domains" className="btn-secondary">İptal</Link>
-            <button type="submit" className="btn-primary" disabled={busy}>{editing ? 'Güncelle' : 'Oluştur'}</button>
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <Link to="/domains" className="btn-secondary order-2 sm:order-1 justify-center">İptal</Link>
+            <button type="submit" className="btn-primary order-1 sm:order-2" disabled={busy}>{editing ? 'Güncelle' : 'Oluştur'}</button>
           </div>
         </div>
       </form>

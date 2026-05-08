@@ -138,11 +138,11 @@ export function ClientForm() {
               </div>
             )}
           </Field>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button type="submit" className="btn-primary" disabled={busy}>
               {editing ? 'Güncelle' : 'Oluştur'}
             </button>
-            <Link to="/clients" className="btn-secondary">İptal</Link>
+            <Link to="/clients" className="btn-secondary justify-center">İptal</Link>
           </div>
         </form>
       </div>

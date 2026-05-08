@@ -56,7 +56,7 @@ export function OffersList() {
       </div>
     ) },
     { key: 'offerStatus', header: 'Durum', sortValue: (r) => r.offerStatus, render: (r) => (
-      <select className="input py-1 text-xs w-44" value={r.offerStatus} onChange={(e) => setStatus(r.id, Number(e.target.value))}>
+      <select className="input py-1 text-xs w-full md:w-44" value={r.offerStatus} onChange={(e) => setStatus(r.id, Number(e.target.value))}>
         {STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
       </select>
     ) },
@@ -64,8 +64,8 @@ export function OffersList() {
       <span className="badge-neutral">{jobs.find((j) => j.id === r.offerType)?.title ?? '-'}</span>
     ) },
     { key: 'offerTitle', header: 'Başlık', sortValue: (r) => r.offerTitle, render: (r) => (
-      <div className="max-w-md">
-        <div className="font-medium truncate">{r.offerTitle}</div>
+      <div className="md:max-w-md">
+        <div className="font-medium md:truncate">{r.offerTitle}</div>
         <div className="text-xs text-ink-500">{truncate(r.offerText, 100)}</div>
       </div>
     ) },
@@ -286,16 +286,16 @@ export function OfferForm() {
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <button type="button" onClick={addMatter} className="btn-secondary"><Plus size={14} /> Madde Ekle</button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <button type="button" onClick={addMatter} className="btn-secondary w-full sm:w-auto"><Plus size={14} /> Madde Ekle</button>
           <div className="text-sm text-ink-600">
             Toplam: <span className="font-semibold text-ink-900">{formatMoney(total)}</span>
           </div>
         </div>
 
-        <div className="flex gap-2 justify-end">
-          <Link to="/offers" className="btn-secondary">İptal</Link>
-          <button type="submit" className="btn-primary" disabled={busy}>
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+          <Link to="/offers" className="btn-secondary order-2 sm:order-1 justify-center">İptal</Link>
+          <button type="submit" className="btn-primary order-1 sm:order-2" disabled={busy}>
             {editing ? 'Güncelle' : 'Teklifi Oluştur'}
           </button>
         </div>

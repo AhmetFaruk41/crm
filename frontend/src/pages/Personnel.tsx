@@ -104,9 +104,9 @@ export function PersonnelForm() {
           <Field label="Telefon">
             <input className="input" value={d.phone} onChange={(e) => setD({ ...d, phone: e.target.value })} />
           </Field>
-          <div className="flex gap-2 justify-end">
-            <Link to="/personnel" className="btn-secondary">İptal</Link>
-            <button type="submit" className="btn-primary" disabled={busy}>{editing ? 'Güncelle' : 'Oluştur'}</button>
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <Link to="/personnel" className="btn-secondary order-2 sm:order-1 justify-center">İptal</Link>
+            <button type="submit" className="btn-primary order-1 sm:order-2" disabled={busy}>{editing ? 'Güncelle' : 'Oluştur'}</button>
           </div>
         </div>
       </form>

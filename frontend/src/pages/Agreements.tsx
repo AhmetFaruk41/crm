@@ -45,7 +45,7 @@ export function AgreementsList() {
     { key: 'id', header: '#', width: '60px', sortValue: (r) => r.id },
     { key: 'offerID', header: 'No', sortValue: (r) => r.offerID, render: (r) => `#${r.offerID}` },
     { key: 'agreementStatus', header: 'Durum', render: (r) => (
-      <select className="input py-1 text-xs w-44" value={r.agreementStatus} onChange={(e) => setStatus(r.offerID, Number(e.target.value))}>
+      <select className="input py-1 text-xs w-full md:w-44" value={r.agreementStatus} onChange={(e) => setStatus(r.offerID, Number(e.target.value))}>
         {STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
       </select>
     ) },
@@ -172,7 +172,7 @@ export function AgreementForm() {
         title={editing ? 'Sözleşme Düzenle' : 'Sözleşme Oluştur'}
         crumbs={[{ label: 'Anasayfa', to: '/' }, { label: 'Sözleşmeler', to: '/agreements' }, { label: editing ? 'Düzenle' : 'Oluştur' }]}
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <a href={`/api/pdf/offer/${offer.offer_id}`} target="_blank" rel="noreferrer" className="btn-secondary"><FileDown size={14} /> Teklif PDF</a>
             {agreement && <a href={`/api/pdf/agreement/${offer.offer_id}`} target="_blank" rel="noreferrer" className="btn-secondary"><FileDown size={14} /> Sözleşme PDF</a>}
           </div>
@@ -237,9 +237,9 @@ export function AgreementForm() {
           ))}
         </div>
 
-        <div className="flex gap-2 justify-end">
-          <Link to="/agreements" className="btn-secondary">İptal</Link>
-          <button type="submit" className="btn-primary" disabled={busy}>
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+          <Link to="/agreements" className="btn-secondary order-2 sm:order-1 justify-center">İptal</Link>
+          <button type="submit" className="btn-primary order-1 sm:order-2" disabled={busy}>
             {editing ? 'Sözleşmeyi Güncelle' : 'Sözleşmeyi Oluştur'}
           </button>
         </div>

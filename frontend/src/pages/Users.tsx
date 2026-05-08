@@ -152,13 +152,15 @@ export function UserForm() {
           {editing && (
             <Field label="Şifre">
               {pwOpen ? (
-                <div className="flex gap-2">
-                  <input type="password" minLength={8} className="input" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Yeni şifre (en az 8)" />
-                  <button type="button" className="btn-primary" onClick={changePw}>Kaydet</button>
-                  <button type="button" className="btn-secondary" onClick={() => setPwOpen(false)}>İptal</button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input type="password" minLength={8} className="input flex-1" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Yeni şifre (en az 8)" />
+                  <div className="flex gap-2">
+                    <button type="button" className="btn-primary flex-1 sm:flex-none" onClick={changePw}>Kaydet</button>
+                    <button type="button" className="btn-secondary flex-1 sm:flex-none" onClick={() => setPwOpen(false)}>İptal</button>
+                  </div>
                 </div>
               ) : (
-                <button type="button" className="btn-secondary" onClick={() => setPwOpen(true)}>Şifre Değiştir</button>
+                <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => setPwOpen(true)}>Şifre Değiştir</button>
               )}
             </Field>
           )}
@@ -168,11 +170,11 @@ export function UserForm() {
           <Field label="E-Posta">
             <input type="email" className="input" value={data.email || ''} onChange={(e) => setData({ ...data, email: e.target.value })} />
           </Field>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button type="submit" className="btn-primary" disabled={busy}>
               {editing ? 'Güncelle' : 'Oluştur'}
             </button>
-            <Link to="/users" className="btn-secondary">İptal</Link>
+            <Link to="/users" className="btn-secondary justify-center">İptal</Link>
           </div>
         </form>
       </div>

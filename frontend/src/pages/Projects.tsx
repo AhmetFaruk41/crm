@@ -43,7 +43,7 @@ export function ProjectsList() {
     { key: 'id', header: '#', width: '60px', sortValue: (r) => r.id },
     { key: 'offerID', header: 'No', sortValue: (r) => r.offerID, render: (r) => `#${r.offerID}` },
     { key: 'status', header: 'Durum', render: (r) => (
-      <select className="input py-1 text-xs w-44" value={r.status} onChange={(e) => setStatus(r.offerID, Number(e.target.value))}>
+      <select className="input py-1 text-xs w-full md:w-44" value={r.status} onChange={(e) => setStatus(r.offerID, Number(e.target.value))}>
         {STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
       </select>
     ) },
@@ -57,11 +57,11 @@ export function ProjectsList() {
     { key: 'projectStartDate', header: 'Başlangıç', render: (r) => formatDate(r.projectStartDate) },
     { key: 'projectEndDate', header: 'Termin', render: (r) => formatDate(r.projectEndDate) },
     { key: '_actions', header: '', width: '170px', render: (r) => (
-      <div className="flex gap-1">
+      <div className="flex gap-1 flex-wrap">
         <Link to={`/billings/${r.offerID}`} className="btn-ghost p-2" title="Ödemeler"><CircleDollarSign size={14} /></Link>
-        <Link to={`/projects/${r.offerID}/edit`} className="btn-ghost p-2"><Pencil size={14} /></Link>
-        <a href={`/api/pdf/agreement/${r.offerID}`} target="_blank" rel="noreferrer" className="btn-ghost p-2"><FileDown size={14} /></a>
-        <button onClick={() => del(r.offerID)} className="btn-ghost p-2 text-red-600"><Trash2 size={14} /></button>
+        <Link to={`/projects/${r.offerID}/edit`} className="btn-ghost p-2" title="Düzenle"><Pencil size={14} /></Link>
+        <a href={`/api/pdf/agreement/${r.offerID}`} target="_blank" rel="noreferrer" className="btn-ghost p-2" title="PDF"><FileDown size={14} /></a>
+        <button onClick={() => del(r.offerID)} className="btn-ghost p-2 text-red-600" title="Sil"><Trash2 size={14} /></button>
       </div>
     ) },
   ];
@@ -182,9 +182,9 @@ export function ProjectForm() {
               <input type="date" className="input" value={data.end_date} onChange={(e) => setData({ ...data, end_date: e.target.value })} required />
             </Field>
           </div>
-          <div className="flex gap-2 justify-end">
-            <Link to="/projects" className="btn-secondary">İptal</Link>
-            <button type="submit" className="btn-primary" disabled={busy}>
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <Link to="/projects" className="btn-secondary order-2 sm:order-1 justify-center">İptal</Link>
+            <button type="submit" className="btn-primary order-1 sm:order-2" disabled={busy}>
               {editing ? 'Güncelle' : 'Projeyi Oluştur'}
             </button>
           </div>
