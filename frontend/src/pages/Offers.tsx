@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, FileDown, FilePlus2, RefreshCw, Trash } from 'lucide-react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Plus, Pencil, Trash2, FileDown, FilePlus2, RefreshCw, Trash, FileStack, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
@@ -9,7 +9,7 @@ import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
 import { Field } from '../components/Field';
 import { addDaysISO, formatDate, formatMoney, todayISO, truncate } from '../lib/format';
-import type { Client, Job, OfferMatter, OfferRow } from '../types';
+import type { Client, Job, OfferMatter, OfferRow, OfferTemplateRow } from '../types';
 
 const STATUS = [
   { value: 0, label: 'Teklif Oluşturuldu', cls: 'badge-neutral' },
@@ -91,7 +91,12 @@ export function OffersList() {
       <PageHeader
         title="Teklifler"
         crumbs={[{ label: 'Anasayfa', to: '/' }, { label: 'Teklifler' }]}
-        actions={<Link to="/offers/new" className="btn-primary"><Plus size={16} /> Yeni Teklif</Link>}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Link to="/offer-templates" className="btn-secondary"><FileStack size={16} /> Şablonlar</Link>
+            <Link to="/offers/new" className="btn-primary"><Plus size={16} /> Yeni Teklif</Link>
+          </div>
+        }
       />
       <DataTable rows={rows} columns={cols} rowKey={(r) => r.id} searchable={(r) => `${r.offerID} ${r.offerTitle} ${r.clientTitle ?? ''} ${r.offerText ?? ''}`} />
     </div>
@@ -106,10 +111,13 @@ export function OfferForm() {
   const { id } = useParams();
   const editing = id !== undefined;
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const templateIdParam = searchParams.get('template');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [templates, setTemplates] = useState<OfferTemplateRow[]>([]);
   const [offerNum, setOfferNum] = useState<number>(0);
   const [data, setData] = useState({
     client_id: 0,
@@ -121,15 +129,52 @@ export function OfferForm() {
   });
   const [matters, setMatters] = useState<OfferMatter[]>([emptyMatter()]);
   const [offerStatus, setOfferStatus] = useState(0);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [tplName, setTplName] = useState('');
+  const [tplDesc, setTplDesc] = useState('');
+
+  async function applyTemplate(templateId: number) {
+    try {
+      const r = await api.get(`/offer-templates/${templateId}`);
+      const t = r.data.template;
+      setData((d) => ({
+        ...d,
+        offer_type: t.offer_type ?? d.offer_type,
+        offer_title: t.default_offer_title || d.offer_title,
+        offer_text: t.default_offer_text || d.offer_text,
+        final_date: addDaysISO(Number(t.default_validity_days) || 15),
+      }));
+      const tplMatters: OfferMatter[] = (r.data.matters ?? []).map((m: any) => ({
+        matter_title: m.matter_title,
+        matter_description: m.matter_description ?? '',
+        matter_extra: m.matter_extra ?? '',
+        matter_unit: Number(m.matter_unit) || 1,
+        matter_old_price: m.matter_old_price ?? 0,
+        matter_price: Number(m.matter_price) || 0,
+      }));
+      setMatters(tplMatters.length ? tplMatters : [emptyMatter()]);
+      toast.success(`"${t.title}" şablonu uygulandı`);
+    } catch {
+      toast.error('Şablon yüklenemedi');
+    }
+  }
 
   useEffect(() => {
     (async () => {
-      const [jr, cr] = await Promise.all([api.get<Job[]>('/jobs'), api.get<Client[]>('/clients')]);
+      const [jr, cr, tr] = await Promise.all([
+        api.get<Job[]>('/jobs'),
+        api.get<Client[]>('/clients'),
+        api.get<OfferTemplateRow[]>('/offer-templates'),
+      ]);
       setJobs(jr.data);
       setClients(cr.data);
+      setTemplates(tr.data.filter((t) => t.isActive));
       if (!editing) {
         const nr = await api.get<{ next: number }>('/offers/next-id');
         setOfferNum(nr.data.next);
+        if (templateIdParam) {
+          await applyTemplate(Number(templateIdParam));
+        }
       } else {
         const or = await api.get(`/offers/by-row/${id}`);
         const o = or.data.offer;
@@ -147,7 +192,31 @@ export function OfferForm() {
       }
       setLoading(false);
     })();
-  }, [id, editing]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, editing, templateIdParam]);
+
+  async function saveAsTemplate() {
+    if (!tplName.trim()) {
+      toast.error('Şablon adı zorunlu');
+      return;
+    }
+    if (!editing) {
+      toast.error('Önce teklifi kaydedin');
+      return;
+    }
+    try {
+      await api.post(`/offer-templates/from-offer/${id}`, {
+        title: tplName.trim(),
+        description: tplDesc.trim(),
+      });
+      toast.success('Şablon oluşturuldu');
+      setShowSaveTemplate(false);
+      setTplName('');
+      setTplDesc('');
+    } catch {
+      /* error handled by interceptor */
+    }
+  }
 
   const total = useMemo(() => matters.reduce((s, m) => s + Number(m.matter_price || 0) * Number(m.matter_unit || 1), 0), [matters]);
 
@@ -199,9 +268,89 @@ export function OfferForm() {
       <PageHeader
         title={editing ? 'Teklif Düzenle' : 'Teklif Oluştur'}
         crumbs={[{ label: 'Anasayfa', to: '/' }, { label: 'Teklifler', to: '/offers' }, { label: editing ? 'Düzenle' : 'Oluştur' }]}
-        actions={editing ? <a href={`/api/pdf/offer/${offerNum}`} target="_blank" rel="noreferrer" className="btn-secondary"><FileDown size={14} /> PDF</a> : null}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            {editing && (
+              <button type="button" onClick={() => setShowSaveTemplate((v) => !v)} className="btn-secondary">
+                <Save size={14} /> Şablon Olarak Kaydet
+              </button>
+            )}
+            {editing && (
+              <a href={`/api/pdf/offer/${offerNum}`} target="_blank" rel="noreferrer" className="btn-secondary">
+                <FileDown size={14} /> PDF
+              </a>
+            )}
+          </div>
+        }
       />
+      {showSaveTemplate && editing && (
+        <div className="card mb-4 max-w-5xl">
+          <div className="card-body space-y-3">
+            <div className="flex items-center gap-2">
+              <FileStack size={16} className="text-ink-700" />
+              <h4 className="font-semibold">Bu Teklifi Şablon Olarak Kaydet</h4>
+            </div>
+            <p className="text-sm text-ink-500">Bu teklifin tüm maddeleri ve içeriği yeni bir şablon olarak kaydedilir.</p>
+            <Field label="Şablon Adı">
+              <input
+                className="input"
+                value={tplName}
+                onChange={(e) => setTplName(e.target.value)}
+                placeholder="Örn: Sunucu Hizmeti, Kurumsal Web Sitesi"
+              />
+            </Field>
+            <Field label="Açıklama (opsiyonel)">
+              <textarea
+                rows={2}
+                className="input"
+                value={tplDesc}
+                onChange={(e) => setTplDesc(e.target.value)}
+                placeholder="Bu şablonun ne için kullanılacağı"
+              />
+            </Field>
+            <div className="flex gap-2 justify-end">
+              <button type="button" onClick={() => setShowSaveTemplate(false)} className="btn-secondary">İptal</button>
+              <button type="button" onClick={saveAsTemplate} className="btn-primary">Şablonu Kaydet</button>
+            </div>
+          </div>
+        </div>
+      )}
       <form onSubmit={submit} className="space-y-4 max-w-5xl">
+        {!editing && templates.length > 0 && (
+          <div className="card">
+            <div className="card-body">
+              <div className="flex items-center gap-2 mb-2">
+                <FileStack size={16} className="text-ink-700" />
+                <h4 className="font-semibold">Şablondan Başla</h4>
+                <span className="text-xs text-ink-500">(opsiyonel)</span>
+              </div>
+              <p className="text-xs text-ink-500 mb-3">Bir şablon seçerek formu hızlıca doldurabilirsiniz. Sonrasında istediğiniz değişikliği yapabilirsiniz.</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  className="input flex-1"
+                  defaultValue=""
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v) {
+                      applyTemplate(Number(v));
+                      e.target.value = '';
+                    }
+                  }}
+                >
+                  <option value="">Şablon seçin...</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}{t.offerTypeTitle ? ` — ${t.offerTypeTitle}` : ''} ({t.matterCount} madde)
+                    </option>
+                  ))}
+                </select>
+                <Link to="/offer-templates" className="btn-secondary">
+                  Şablonları Yönet
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="card">
           <div className="card-body space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

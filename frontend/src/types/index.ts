@@ -123,6 +123,45 @@ export interface DomainRow {
   kdv: number | null;
 }
 
+export interface OfferTemplateRow {
+  id: number;
+  title: string;
+  description: string | null;
+  offerType: number | null;
+  offerTypeTitle: string | null;
+  defaultOfferTitle: string | null;
+  defaultOfferText: string | null;
+  defaultValidityDays: number;
+  isActive: number;
+  createDate: string;
+  matterCount: number;
+  totalPrice: number;
+}
+
+export interface OfferTemplate {
+  id: number;
+  title: string;
+  description: string | null;
+  offer_type: number | null;
+  default_offer_title: string | null;
+  default_offer_text: string | null;
+  default_validity_days: number;
+  is_active: number;
+  create_date: string;
+}
+
+export interface OfferTemplateMatter {
+  id?: number;
+  template_id?: number;
+  ordering?: number;
+  matter_title: string;
+  matter_description: string;
+  matter_extra?: string;
+  matter_unit: number;
+  matter_old_price?: number | null;
+  matter_price: number;
+}
+
 export interface DomainPricing {
   id: number;
   title: string;

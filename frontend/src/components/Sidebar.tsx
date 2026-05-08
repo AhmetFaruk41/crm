@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
+  FileStack,
   ScrollText,
   Briefcase,
   Users as UsersIcon,
@@ -15,6 +16,7 @@ import {
 const items = [
   { to: '/', label: 'Anasayfa', icon: LayoutDashboard, end: true },
   { to: '/offers', label: 'Teklifler', icon: FileText },
+  { to: '/offer-templates', label: 'Teklif Şablonları', icon: FileStack },
   { to: '/agreements', label: 'Sözleşmeler', icon: ScrollText },
   { to: '/projects', label: 'Projeler', icon: Briefcase },
   { to: '/billings', label: 'Ödemeler', icon: CircleDollarSign },

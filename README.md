@@ -12,6 +12,11 @@ mysql -u root -p noname_crm < backend/src/db/schema.sql
 mysql -u root -p noname_crm < backend/src/db/seed.sql
 ```
 
+> Mevcut bir kurulumda sadece teklif şablonları tablolarını eklemek için
+> `schema.sql` dosyasındaki `offer_templates` ve `offer_template_matters`
+> CREATE bloklarını çalıştırın, ardından `seed.sql` içinden örnek şablon
+> INSERT'lerini elle koşturabilirsiniz.
+
 ### 2) Backend
 
 ```bash
@@ -33,7 +38,8 @@ npm run dev          # http://localhost:5173
 ## Modüller
 
 - **Anasayfa** – istatistikler, geciken teklifler
-- **Teklifler** – CRUD + durum + revize + PDF
+- **Teklifler** – CRUD + durum + revize + PDF, şablondan oluşturma
+- **Teklif Şablonları** – sık kullanılan teklifler için hazır şablonlar (sunucu, web, e-ticaret, mobil, dijital pazarlama, grafik, video); tekliften şablon oluşturma desteği
 - **Sözleşmeler** – tekliften sözleşme oluştur, madde seç, PDF
 - **Projeler** – sözleşmeden proje başlat, durum yönetimi
 - **Ödemeler** – proje bazlı ödeme takibi

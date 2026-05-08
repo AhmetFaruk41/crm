@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import { UsersList, UserForm } from './pages/Users';
 import { ClientsList, ClientForm } from './pages/Clients';
 import { OffersList, OfferForm } from './pages/Offers';
+import { OfferTemplatesList, OfferTemplateForm } from './pages/OfferTemplates';
 import { AgreementsList, AgreementForm } from './pages/Agreements';
 import { ProjectsList, ProjectForm } from './pages/Projects';
 import { BillingsList, BillingsDetail } from './pages/Billings';
@@ -43,6 +44,10 @@ export default function App() {
           <Route path="offers" element={<OffersList />} />
           <Route path="offers/new" element={<OfferForm />} />
           <Route path="offers/:id/edit" element={<OfferForm />} />
+
+          <Route path="offer-templates" element={<OfferTemplatesList />} />
+          <Route path="offer-templates/new" element={<OfferTemplateForm />} />
+          <Route path="offer-templates/:id/edit" element={<OfferTemplateForm />} />
 
           <Route path="agreements" element={<AgreementsList />} />
           <Route path="agreements/new" element={<AgreementForm />} />

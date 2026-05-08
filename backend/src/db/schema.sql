@@ -147,6 +147,34 @@ CREATE TABLE domains (
   email VARCHAR(255) DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+DROP TABLE IF EXISTS offer_templates;
+CREATE TABLE offer_templates (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  offer_type INT(11) DEFAULT NULL,
+  default_offer_title VARCHAR(255) DEFAULT NULL,
+  default_offer_text TEXT,
+  default_validity_days INT(11) NOT NULL DEFAULT 15,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS offer_template_matters;
+CREATE TABLE offer_template_matters (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  template_id INT(11) NOT NULL,
+  ordering INT(11) NOT NULL DEFAULT 0,
+  matter_title VARCHAR(255) NOT NULL,
+  matter_description TEXT NOT NULL,
+  matter_extra TEXT,
+  matter_unit INT(11) NOT NULL DEFAULT 1,
+  matter_old_price FLOAT DEFAULT NULL,
+  matter_price FLOAT NOT NULL DEFAULT 0,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (template_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 DROP TABLE IF EXISTS domain_pricing;
 CREATE TABLE domain_pricing (
   id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
