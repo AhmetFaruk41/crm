@@ -271,7 +271,6 @@ export async function generateOfferPdf(input: OfferPdfInput): Promise<Buffer> {
               {
                 ul: [
                   { text: ['Fiyat teklifi ', { text: dateformat3(offer.final_date), bold: true, color: C.ink }, ' tarihine kadar geçerlidir.'], color: C.muted },
-                  { text: ['Tüm fiyatlara ', { text: 'KDV(%20)', bold: true, color: C.ink }, ' dahil ', { text: 'değildir', bold: true, color: C.ink }, '.'], color: C.muted },
                   { text: 'Teklif formu tarafınızdan onaylandıktan sonra geçerlilik kazanır.', color: C.muted },
                   { text: 'Ödeme planı ve teslimat takvimi karşılıklı mutabakat ile belirlenecektir.', color: C.muted },
                 ],
@@ -587,7 +586,6 @@ export async function generateAgreementPdf(input: AgreementPdfInput): Promise<Bu
           'Ödemeler, taraflar arasında belirlenen plan doğrultusunda banka havalesi/EFT yoluyla yapılır.',
           'Yapılan kısmi ödemeler için makbuz/fatura YÜKLENİCİ tarafından düzenlenir.',
           'Ödeme yapılmaması durumunda YÜKLENİCİ hizmeti askıya alma hakkını saklı tutar.',
-          'Tüm tutarlara KDV dahil değildir; KDV tutarları ayrıca faturalandırılır.',
         ],
       }),
 
