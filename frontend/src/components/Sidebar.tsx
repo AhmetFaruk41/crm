@@ -12,20 +12,58 @@ import {
   Wallet,
   UserRoundSearch,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 
-const items = [
-  { to: '/', label: 'Anasayfa', icon: LayoutDashboard, end: true },
-  { to: '/leads', label: 'Potansiyel Müşteriler', icon: UserRoundSearch },
-  { to: '/offers', label: 'Teklifler', icon: FileText },
-  { to: '/offer-templates', label: 'Teklif Şablonları', icon: FileStack },
-  { to: '/agreements', label: 'Sözleşmeler', icon: ScrollText },
-  { to: '/projects', label: 'Projeler', icon: Briefcase },
-  { to: '/finance', label: 'Gelir / Gider', icon: Wallet },
-  { to: '/clients', label: 'Müşteriler', icon: Building2 },
-  { to: '/personnel', label: 'Personel', icon: UserCog },
-  { to: '/users', label: 'Kullanıcılar', icon: UsersIcon },
-  { to: '/domains', label: 'Domainler', icon: Globe },
+interface NavItem {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+}
+
+interface NavGroup {
+  label: string | null;
+  items: NavItem[];
+}
+
+const groups: NavGroup[] = [
+  {
+    label: null,
+    items: [
+      { to: '/', label: 'Anasayfa', icon: LayoutDashboard, end: true },
+    ],
+  },
+  {
+    label: 'Satış',
+    items: [
+      { to: '/leads', label: 'Potansiyel Müşteriler', icon: UserRoundSearch },
+      { to: '/offers', label: 'Teklifler', icon: FileText },
+      { to: '/offer-templates', label: 'Teklif Şablonları', icon: FileStack },
+      { to: '/agreements', label: 'Sözleşmeler', icon: ScrollText },
+    ],
+  },
+  {
+    label: 'Operasyon',
+    items: [
+      { to: '/projects', label: 'Projeler', icon: Briefcase },
+      { to: '/domains', label: 'Domainler', icon: Globe },
+    ],
+  },
+  {
+    label: 'Finans',
+    items: [
+      { to: '/finance', label: 'Gelir / Gider', icon: Wallet },
+    ],
+  },
+  {
+    label: 'Yönetim',
+    items: [
+      { to: '/clients', label: 'Müşteriler', icon: Building2 },
+      { to: '/personnel', label: 'Personel', icon: UserCog },
+      { to: '/users', label: 'Kullanıcılar', icon: UsersIcon },
+    ],
+  },
 ];
 
 interface Props {
@@ -63,20 +101,30 @@ export default function Sidebar({ open, onClose }: Props) {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto py-3">
-          {items.map((it) => (
-            <NavLink
-              key={it.to}
-              to={it.to}
-              end={it.end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-6 py-2.5 text-sm transition-colors ${
-                  isActive ? 'bg-ink-800 text-white border-l-2 border-white' : 'text-ink-300 hover:bg-ink-800 hover:text-white'
-                }`
-              }
-            >
-              <it.icon size={18} />
-              <span>{it.label}</span>
-            </NavLink>
+          {groups.map((group, idx) => (
+            <div key={group.label ?? `g-${idx}`} className={idx > 0 ? 'mt-3 pt-3 border-t border-ink-800' : ''}>
+              {group.label && (
+                <div className="px-6 mb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500">
+                  {group.label}
+                </div>
+              )}
+              {group.items.map((it) => (
+                <NavLink
+                  key={it.to}
+                  to={it.to}
+                  end={it.end}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-6 py-2.5 text-sm transition-colors ${
+                      isActive ? 'bg-ink-800 text-white border-l-2 border-white' : 'text-ink-300 hover:bg-ink-800 hover:text-white'
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <it.icon size={18} />
+                  <span>{it.label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
       </aside>

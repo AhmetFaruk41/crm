@@ -57,6 +57,12 @@ domainsRouter.put('/:id/pay', asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
+domainsRouter.put('/:id/unpay', asyncHandler(async (req, res) => {
+  const r = await execute('UPDATE domains SET pay_status = 0 WHERE id = ?', [req.params.id]);
+  if (r.affectedRows === 0) throw new HttpError(404, 'Domain bulunamadı');
+  res.json({ ok: true });
+}));
+
 domainsRouter.delete('/:id', asyncHandler(async (req, res) => {
   const r = await execute('DELETE FROM domains WHERE id = ?', [req.params.id]);
   if (r.affectedRows === 0) throw new HttpError(404, 'Domain bulunamadı');

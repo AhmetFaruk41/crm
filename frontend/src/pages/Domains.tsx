@@ -1,6 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, BadgeDollarSign } from 'lucide-react';
+import {
+  Plus, Pencil, Trash2, BadgeDollarSign, RotateCcw, Search,
+  Globe, AlertTriangle, Hourglass, DollarSign,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
@@ -11,8 +14,33 @@ import { Field } from '../components/Field';
 import { formatDate } from '../lib/format';
 import type { DomainPricing, DomainRow } from '../types';
 
+const RENEWAL_SOON_DAYS = 30;
+
+function nextRenewalDate(createDate: string | null | undefined): Date | null {
+  if (!createDate) return null;
+  const normalized = createDate.includes(' ') ? createDate.replace(' ', 'T') : createDate;
+  const base = new Date(normalized.includes('T') ? normalized : normalized + 'T00:00:00');
+  if (isNaN(base.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const next = new Date(base);
+  next.setFullYear(today.getFullYear());
+  if (next < today) next.setFullYear(today.getFullYear() + 1);
+  return next;
+}
+
+function daysUntil(date: Date): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((date.getTime() - today.getTime()) / 86400000);
+}
+
+type FilterKey = 'all' | 'customer' | 'pending' | 'soon' | 'inactive';
+
 export function DomainsList() {
   const [rows, setRows] = useState<DomainRow[] | null>(null);
+  const [filter, setFilter] = useState<FilterKey>('all');
+  const [search, setSearch] = useState('');
 
   async function load() {
     const r = await api.get<DomainRow[]>('/domains');
@@ -26,6 +54,12 @@ export function DomainsList() {
     toast.success('Ödeme işaretlendi');
     load();
   }
+  async function markPending(id: number) {
+    if (!await confirm({ message: 'Yenileme bekliyor durumuna alınsın mı?', confirmLabel: 'Evet' })) return;
+    await api.put(`/domains/${id}/unpay`);
+    toast.success('Yenileme bekliyor olarak işaretlendi');
+    load();
+  }
   async function del(id: number) {
     if (!await confirm({ message: 'Domain silinsin mi?', danger: true, confirmLabel: 'Sil' })) return;
     await api.delete(`/domains/${id}`);
@@ -33,36 +67,109 @@ export function DomainsList() {
     load();
   }
 
-  const cols: Column<DomainRow>[] = [
-    { key: 'id', header: '#', width: '60px', sortValue: (r) => r.id },
-    { key: 'name', header: 'Domain', sortValue: (r) => r.name, render: (r) => <span className="font-medium">{r.name}</span> },
-    { key: 'sub_domain', header: 'Sub Domain', render: (r) => Number(r.sub_domain) || '-' },
-    { key: 'create_date', header: 'Kurulum', sortValue: (r) => r.create_date, render: (r) => formatDate(r.create_date) },
+  const enriched = useMemo(() => (rows ?? []).map((r) => {
+    const renewal = nextRenewalDate(r.create_date);
+    const days = renewal ? daysUntil(renewal) : null;
+    return { ...r, _renewal: renewal, _days: days };
+  }), [rows]);
+
+  const summary = useMemo(() => {
+    const customers = enriched.filter((r) => r.status === 1);
+    const paying = customers.filter((r) => r.pay_status === 1);
+    const pending = customers.filter((r) => r.pay_status === 0);
+    const soon = customers.filter((r) => r._days !== null && r._days <= RENEWAL_SOON_DAYS);
+    const revenue = customers.reduce((sum, r) => sum + Number(r.full_price ?? 0), 0);
+    return {
+      customers: customers.length,
+      paying: paying.length,
+      pending: pending.length,
+      soon: soon.length,
+      inactive: enriched.length - customers.length,
+      revenue,
+    };
+  }, [enriched]);
+
+  const filtered = useMemo(() => {
+    let list = enriched;
+    if (filter === 'customer') list = list.filter((r) => r.status === 1);
+    else if (filter === 'pending') list = list.filter((r) => r.status === 1 && r.pay_status === 0);
+    else if (filter === 'soon') list = list.filter((r) => r.status === 1 && r._days !== null && r._days <= RENEWAL_SOON_DAYS);
+    else if (filter === 'inactive') list = list.filter((r) => r.status === 0);
+    if (search.trim()) {
+      const q = search.trim().toLocaleLowerCase('tr-TR');
+      list = list.filter((r) => `${r.name} ${r.fullname ?? ''} ${r.email ?? ''} ${r.phone ?? ''}`.toLocaleLowerCase('tr-TR').includes(q));
+    }
+    return [...list].sort((a, b) => {
+      const av = a._renewal?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const bv = b._renewal?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      return av - bv;
+    });
+  }, [enriched, filter, search]);
+
+  type EnrichedRow = (typeof enriched)[number];
+
+  function renewalBadge(r: EnrichedRow) {
+    if (r.status !== 1 || !r._renewal || r._days === null) return null;
+    if (r._days < 0) return <span className="badge-danger ml-2">Yenileme gecikti</span>;
+    if (r._days === 0) return <span className="badge-warning ml-2">Bugün yenilenecek</span>;
+    if (r._days <= RENEWAL_SOON_DAYS) return <span className="badge-warning ml-2">{r._days} gün kaldı</span>;
+    return null;
+  }
+
+  const cols: Column<EnrichedRow>[] = [
+    { key: 'name', header: 'Domain', sortValue: (r) => r.name, render: (r) => (
+      <div className="min-w-0">
+        <a href={`https://${r.name}`} target="_blank" rel="noopener noreferrer" className="font-medium hover:underline break-all">{r.name}</a>
+        {Number(r.sub_domain) > 0 && <div className="text-xs text-ink-500">{r.sub_domain} alt domain</div>}
+      </div>
+    ) },
     { key: 'subscription', header: 'Abonelik', render: (r) => (
       <div>
         <div>{r.sub_title ?? '-'}</div>
         {r.full_price && <div className="text-xs text-ink-500">{r.full_price}$/yıl</div>}
       </div>
     ) },
-    { key: 'fullname', header: 'Yetkili', render: (r) => r.fullname || '-' },
-    { key: 'phone', header: 'Telefon', render: (r) => r.phone || '-' },
+    { key: 'create_date', header: 'Kurulum', sortValue: (r) => r.create_date, render: (r) => formatDate(r.create_date) },
+    { key: '_renewal', header: 'Sonraki Yenileme', sortValue: (r) => r._renewal?.getTime() ?? Number.MAX_SAFE_INTEGER, render: (r) => (
+      r.status === 1 && r._renewal
+        ? <div>{formatDate(r._renewal.toISOString().slice(0, 10))}{renewalBadge(r)}</div>
+        : <span className="text-ink-400">-</span>
+    ) },
+    { key: 'fullname', header: 'Yetkili', render: (r) => (
+      <div className="min-w-0">
+        <div>{r.fullname || '-'}</div>
+        {r.phone && <div className="text-xs text-ink-500">{r.phone}</div>}
+      </div>
+    ) },
     { key: 'status', header: 'Durum', render: (r) => (
       <span className={r.status === 1 ? (r.pay_status === 1 ? 'badge-success' : 'badge-warning') : 'badge-neutral'}>
         {r.status === 1 ? (r.pay_status === 1 ? 'Müşteri · Ödendi' : 'Müşteri · Ödeme Bekliyor') : 'Müşteri Değil'}
       </span>
     ) },
-    { key: '_actions', header: '', width: '160px', render: (r) => (
+    { key: '_actions', header: '', width: '180px', render: (r) => (
       <div className="flex gap-1">
         {r.status === 1 && r.pay_status === 0 && (
-          <button onClick={() => pay(r.id)} className="btn-ghost p-2 text-emerald-700" title="Ödeme"><BadgeDollarSign size={14} /></button>
+          <button onClick={() => pay(r.id)} className="btn-ghost p-2 text-emerald-700" title="Ödendi olarak işaretle"><BadgeDollarSign size={14} /></button>
         )}
-        <Link to={`/domains/${r.id}/edit`} className="btn-ghost p-2"><Pencil size={14} /></Link>
-        <button onClick={() => del(r.id)} className="btn-ghost p-2 text-red-600"><Trash2 size={14} /></button>
+        {r.status === 1 && r.pay_status === 1 && (
+          <button onClick={() => markPending(r.id)} className="btn-ghost p-2 text-amber-600" title="Yenileme bekliyor moduna al"><RotateCcw size={14} /></button>
+        )}
+        <Link to={`/domains/${r.id}/edit`} className="btn-ghost p-2" title="Düzenle"><Pencil size={14} /></Link>
+        <button onClick={() => del(r.id)} className="btn-ghost p-2 text-red-600" title="Sil"><Trash2 size={14} /></button>
       </div>
     ) },
   ];
 
+  const filterTabs: { key: FilterKey; label: string; count: number }[] = [
+    { key: 'all', label: 'Tümü', count: enriched.length },
+    { key: 'customer', label: 'Müşteri', count: summary.customers },
+    { key: 'pending', label: 'Ödeme Bekliyor', count: summary.pending },
+    { key: 'soon', label: 'Yenileme Yakın', count: summary.soon },
+    { key: 'inactive', label: 'Müşteri Değil', count: summary.inactive },
+  ];
+
   if (!rows) return <Loading />;
+
   return (
     <div>
       <PageHeader
@@ -70,7 +177,88 @@ export function DomainsList() {
         crumbs={[{ label: 'Anasayfa', to: '/' }, { label: 'Domainler' }]}
         actions={<Link to="/domains/new" className="btn-primary"><Plus size={16} /> Yeni Domain</Link>}
       />
-      <DataTable rows={rows} columns={cols} rowKey={(r) => r.id} searchable={(r) => `${r.name} ${r.fullname ?? ''} ${r.email ?? ''}`} />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+        <div className="card card-body">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs text-ink-500">Aktif Müşteri</div>
+              <div className="text-2xl sm:text-3xl font-semibold mt-1">{summary.customers}</div>
+              <div className="text-xs text-ink-500 mt-1">{summary.paying} ödenmiş</div>
+            </div>
+            <div className="h-10 w-10 grid place-items-center rounded-full bg-ink-100 text-ink-700 shrink-0"><Globe size={18} /></div>
+          </div>
+        </div>
+        <div className="card card-body">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs text-ink-500">Yenileme Yakın</div>
+              <div className="text-2xl sm:text-3xl font-semibold mt-1 text-amber-600">{summary.soon}</div>
+              <div className="text-xs text-ink-500 mt-1">{RENEWAL_SOON_DAYS} gün içinde</div>
+            </div>
+            <div className="h-10 w-10 grid place-items-center rounded-full bg-amber-50 text-amber-700 shrink-0"><AlertTriangle size={18} /></div>
+          </div>
+        </div>
+        <div className="card card-body">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs text-ink-500">Ödeme Bekliyor</div>
+              <div className="text-2xl sm:text-3xl font-semibold mt-1">{summary.pending}</div>
+              <div className="text-xs text-ink-500 mt-1">tahsil edilmemiş</div>
+            </div>
+            <div className="h-10 w-10 grid place-items-center rounded-full bg-ink-100 text-ink-700 shrink-0"><Hourglass size={18} /></div>
+          </div>
+        </div>
+        <div className="card card-body">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs text-ink-500">Yıllık Gelir</div>
+              <div className="text-2xl sm:text-3xl font-semibold mt-1">{summary.revenue}<span className="text-base text-ink-500 ml-0.5">$</span></div>
+              <div className="text-xs text-ink-500 mt-1">listelenen müşterilerden</div>
+            </div>
+            <div className="h-10 w-10 grid place-items-center rounded-full bg-emerald-50 text-emerald-700 shrink-0"><DollarSign size={18} /></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card card-body mb-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <div className="flex flex-wrap gap-2 flex-1">
+            {filterTabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setFilter(t.key)}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium border transition-colors ${
+                  filter === t.key
+                    ? 'bg-ink-900 text-white border-ink-900'
+                    : 'bg-white text-ink-700 border-ink-200 hover:bg-ink-50'
+                }`}
+              >
+                {t.label}
+                <span className={`text-xs rounded-md px-1.5 py-0.5 ${filter === t.key ? 'bg-white/15' : 'bg-ink-100 text-ink-600'}`}>{t.count}</span>
+              </button>
+            ))}
+          </div>
+          <div className="md:w-72">
+            <div className="relative">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+              <input
+                className="input pl-9"
+                placeholder="Domain, yetkili, e-posta..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <DataTable
+        rows={filtered}
+        columns={cols}
+        rowKey={(r) => r.id}
+      />
     </div>
   );
 }
