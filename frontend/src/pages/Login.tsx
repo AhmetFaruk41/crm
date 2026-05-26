@@ -30,7 +30,7 @@ export default function Login() {
     <div className="min-h-screen grid place-items-center bg-ink-100 px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6 sm:mb-8">
-          <div className="text-xl sm:text-2xl font-bold tracking-wide text-ink-900">Can Bozyiğit</div>
+          <div className="text-xl sm:text-2xl font-bold tracking-wide text-ink-900">Umutcan Bozyiğit</div>
           <div className="text-xs text-ink-500 mt-1">CRM Panel · Giriş</div>
         </div>
         <div className="card">

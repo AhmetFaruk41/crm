@@ -48,7 +48,7 @@ export default function Sidebar({ open, onClose }: Props) {
       >
         <div className="px-6 py-5 border-b border-ink-800 flex items-center justify-between">
           <div>
-            <div className="text-xl font-bold tracking-wide">Can Bozyiğit</div>
+            <div className="text-xl font-bold tracking-wide">Umutcan Bozyiğit</div>
             <div className="text-xs text-ink-400 mt-1">CRM Panel</div>
           </div>
           <button

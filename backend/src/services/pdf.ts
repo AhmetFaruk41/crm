@@ -1,4 +1,4 @@
-// PDF üretimi - Can Bozyiğit · neutral grayscale
+// PDF üretimi - Umutcan Bozyiğit · neutral grayscale
 import PdfPrinter from 'pdfmake';
 import type { TDocumentDefinitions, Content, ContentStack } from 'pdfmake/interfaces';
 import path from 'node:path';
@@ -18,7 +18,7 @@ const fonts = {
 };
 const printer = new PdfPrinter(fonts);
 
-const BRAND = 'Can Bozyiğit';
+const BRAND = 'Umutcan Bozyiğit';
 
 const C = {
   ink: '#0f172a',
