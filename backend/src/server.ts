@@ -18,6 +18,8 @@ import { projectsRouter, billingsRouter } from './routes/projects.js';
 import { domainsRouter } from './routes/domains.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { pdfRouter } from './routes/pdf.js';
+import { financeRouter } from './routes/finance.js';
+import { leadsRouter } from './routes/leads.js';
 
 const app = express();
 app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));
@@ -33,6 +35,12 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 
 // All other routes require auth
+app.get('/api/resources/web-sitesi-proje-bilgi-formu', requireAuth, (_req, res) => {
+  res.download(
+    path.resolve('assets/forms/web-sitesi-proje-bilgi-formu.docx'),
+    'Web Sitesi Proje Bilgi Formu.docx'
+  );
+});
 app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/personnel', requireAuth, personnelRouter);
 app.use('/api/jobs', requireAuth, jobsRouter);
@@ -44,6 +52,8 @@ app.use('/api/projects', requireAuth, projectsRouter);
 app.use('/api/billings', requireAuth, billingsRouter);
 app.use('/api/domains', requireAuth, domainsRouter);
 app.use('/api/dashboard', requireAuth, dashboardRouter);
+app.use('/api/finance', requireAuth, financeRouter);
+app.use('/api/leads', requireAuth, leadsRouter);
 app.use('/api/pdf', requireAuth, pdfRouter);
 
 app.use(notFound);

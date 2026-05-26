@@ -43,10 +43,53 @@ CREATE TABLE clients (
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+DROP TABLE IF EXISTS leads;
+CREATE TABLE leads (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  company_name VARCHAR(255) NOT NULL,
+  contact_name VARCHAR(255) DEFAULT NULL,
+  phone VARCHAR(255) DEFAULT NULL,
+  email VARCHAR(255) DEFAULT NULL,
+  service_interest VARCHAR(255) DEFAULT NULL,
+  source VARCHAR(100) DEFAULT NULL,
+  estimated_value DECIMAL(12,2) DEFAULT NULL,
+  stage VARCHAR(40) NOT NULL DEFAULT 'new',
+  temperature VARCHAR(20) NOT NULL DEFAULT 'warm',
+  next_follow_up_date DATE DEFAULT NULL,
+  notes TEXT DEFAULT NULL,
+  lost_reason VARCHAR(255) DEFAULT NULL,
+  converted_client_id INT(11) DEFAULT NULL,
+  converted_offer_id INT(11) DEFAULT NULL,
+  user_id INT(11) DEFAULT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (stage),
+  INDEX (temperature),
+  INDEX (next_follow_up_date),
+  INDEX (converted_client_id),
+  INDEX (converted_offer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS lead_activities;
+CREATE TABLE lead_activities (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  lead_id INT(11) NOT NULL,
+  activity_type VARCHAR(40) NOT NULL,
+  description TEXT NOT NULL,
+  activity_date DATETIME NOT NULL,
+  next_action_date DATE DEFAULT NULL,
+  user_id INT(11) DEFAULT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (lead_id),
+  INDEX (activity_date),
+  INDEX (next_action_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 DROP TABLE IF EXISTS offers;
 CREATE TABLE offers (
   id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   client_id INT(11) NOT NULL,
+  lead_id INT(11) DEFAULT NULL,
   offer_id INT(11) NOT NULL,
   offer_status INT(11) NOT NULL DEFAULT 0,
   offer_type INT(11) DEFAULT NULL,
@@ -58,7 +101,8 @@ CREATE TABLE offers (
   user_id INT(11) DEFAULT NULL,
   main_offer_id INT(11) DEFAULT NULL,
   INDEX (offer_id),
-  INDEX (client_id)
+  INDEX (client_id),
+  INDEX (lead_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS offers_matters;
@@ -86,7 +130,7 @@ CREATE TABLE agreements (
   agreement_title VARCHAR(255) NOT NULL,
   start_date DATE DEFAULT NULL,
   end_date DATE DEFAULT NULL,
-  price FLOAT DEFAULT NULL,
+  price DECIMAL(12,2) DEFAULT NULL,
   kdv INT(11) NOT NULL DEFAULT 20,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX (offer_id)
@@ -102,7 +146,7 @@ CREATE TABLE agreements_matters (
   matter_description TEXT NOT NULL,
   matter_extra TEXT,
   matter_unit INT(11) NOT NULL DEFAULT 1,
-  matter_price FLOAT NOT NULL,
+  matter_price DECIMAL(12,2) NOT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX (offer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -116,21 +160,107 @@ CREATE TABLE projects (
   status INT(11) NOT NULL DEFAULT 0,
   type INT(11) NOT NULL,
   title VARCHAR(255) NOT NULL,
-  price INT(11) NOT NULL DEFAULT 0,
+  description TEXT DEFAULT NULL,
+  priority INT(11) NOT NULL DEFAULT 1,
+  progress INT(11) NOT NULL DEFAULT 0,
+  price DECIMAL(12,2) NOT NULL DEFAULT 0,
   kdv INT(11) NOT NULL DEFAULT 20,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  completed_at DATETIME DEFAULT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
-  INDEX (offer_id)
+  UNIQUE KEY unique_project_offer (offer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS projects_billings;
 CREATE TABLE projects_billings (
   id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   offer_id INT(11) NOT NULL,
-  pay INT(11) NOT NULL DEFAULT 0,
+  payment_plan_id INT(11) DEFAULT NULL,
+  pay DECIMAL(12,2) NOT NULL DEFAULT 0,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX (offer_id)
+  INDEX (offer_id),
+  INDEX (payment_plan_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS project_activities;
+CREATE TABLE project_activities (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT(11) NOT NULL,
+  user_id INT(11) DEFAULT NULL,
+  action VARCHAR(60) NOT NULL,
+  description VARCHAR(500) NOT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (project_id),
+  INDEX (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS project_stages;
+CREATE TABLE project_stages (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT(11) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  ordering INT(11) NOT NULL DEFAULT 0,
+  status INT(11) NOT NULL DEFAULT 0,
+  start_date DATE DEFAULT NULL,
+  end_date DATE DEFAULT NULL,
+  completed_at DATETIME DEFAULT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (project_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS project_tasks;
+CREATE TABLE project_tasks (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT(11) NOT NULL,
+  stage_id INT(11) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT NULL,
+  personel_id INT(11) DEFAULT NULL,
+  status INT(11) NOT NULL DEFAULT 0,
+  priority INT(11) NOT NULL DEFAULT 1,
+  due_date DATE DEFAULT NULL,
+  completed_at DATETIME DEFAULT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (project_id),
+  INDEX (stage_id),
+  INDEX (personel_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS project_payment_plans;
+CREATE TABLE project_payment_plans (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT(11) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  due_date DATE NOT NULL,
+  status INT(11) NOT NULL DEFAULT 0,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (project_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS finance_transactions;
+CREATE TABLE finance_transactions (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  transaction_type VARCHAR(20) NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  transaction_date DATE NOT NULL,
+  payment_method VARCHAR(50) DEFAULT NULL,
+  reference VARCHAR(255) DEFAULT NULL,
+  notes TEXT DEFAULT NULL,
+  user_id INT(11) DEFAULT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (transaction_type),
+  INDEX (transaction_date),
+  INDEX (category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS domains;

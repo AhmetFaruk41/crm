@@ -10,7 +10,8 @@ dashboardRouter.get('/stats', asyncHandler(async (_req, res) => {
       (SELECT COUNT(*) FROM clients) AS clientCount,
       (SELECT COUNT(*) FROM offers) AS offerCount,
       (SELECT COUNT(*) FROM agreements) AS agreementCount,
-      (SELECT COUNT(*) FROM projects) AS projectCount
+      (SELECT COUNT(*) FROM projects) AS projectCount,
+      (SELECT COUNT(*) FROM leads WHERE stage NOT IN ('won', 'lost')) AS leadCount
   `);
 
   const thisMonth = await queryOne<any>(`
@@ -52,11 +53,40 @@ dashboardRouter.get('/stats', asyncHandler(async (_req, res) => {
     LIMIT 20
   `);
 
+  const pipelineRaw = await query<any>(`
+    SELECT stage, COUNT(*) AS cnt, COALESCE(SUM(estimated_value), 0) AS total
+    FROM leads
+    GROUP BY stage
+  `);
+  const pipeline = pipelineRaw.map((r) => ({
+    stage: r.stage,
+    count: Number(r.cnt),
+    total: Number(r.total),
+  }));
+  const followUps = await query(`
+    SELECT id, company_name, contact_name, temperature, next_follow_up_date, stage
+    FROM leads
+    WHERE next_follow_up_date <= CURDATE() AND stage NOT IN ('won', 'lost')
+    ORDER BY next_follow_up_date, temperature = 'hot' DESC, updated_at DESC
+    LIMIT 20
+  `);
+  const leadSummaryRaw = await queryOne<any>(`
+    SELECT
+      SUM(CASE WHEN stage NOT IN ('won', 'lost') THEN 1 ELSE 0 END) AS active,
+      SUM(CASE WHEN stage = 'won' THEN 1 ELSE 0 END) AS won,
+      SUM(CASE WHEN stage = 'lost' THEN 1 ELSE 0 END) AS lost,
+      SUM(CASE WHEN temperature = 'hot' AND stage NOT IN ('won', 'lost') THEN 1 ELSE 0 END) AS hot,
+      SUM(CASE WHEN next_follow_up_date < CURDATE() AND stage NOT IN ('won', 'lost') THEN 1 ELSE 0 END) AS overdue,
+      COALESCE(SUM(CASE WHEN stage NOT IN ('won', 'lost') THEN estimated_value ELSE 0 END), 0) AS potential
+    FROM leads
+  `);
+
   const countsNum = {
     clientCount: Number(counts?.clientCount ?? 0),
     offerCount: Number(counts?.offerCount ?? 0),
     agreementCount: Number(counts?.agreementCount ?? 0),
     projectCount: Number(counts?.projectCount ?? 0),
+    leadCount: Number(counts?.leadCount ?? 0),
   };
 
   res.json({
@@ -66,5 +96,15 @@ dashboardRouter.get('/stats', asyncHandler(async (_req, res) => {
     ratio,
     byType,
     overdue,
+    pipeline,
+    followUps,
+    leadSummary: {
+      active: Number(leadSummaryRaw?.active ?? 0),
+      won: Number(leadSummaryRaw?.won ?? 0),
+      lost: Number(leadSummaryRaw?.lost ?? 0),
+      hot: Number(leadSummaryRaw?.hot ?? 0),
+      overdue: Number(leadSummaryRaw?.overdue ?? 0),
+      potential: Number(leadSummaryRaw?.potential ?? 0),
+    },
   });
 }));

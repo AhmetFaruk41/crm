@@ -9,17 +9,19 @@ import {
   Globe,
   UserCog,
   Building2,
-  CircleDollarSign,
+  Wallet,
+  UserRoundSearch,
   X,
 } from 'lucide-react';
 
 const items = [
   { to: '/', label: 'Anasayfa', icon: LayoutDashboard, end: true },
+  { to: '/leads', label: 'Potansiyel Müşteriler', icon: UserRoundSearch },
   { to: '/offers', label: 'Teklifler', icon: FileText },
   { to: '/offer-templates', label: 'Teklif Şablonları', icon: FileStack },
   { to: '/agreements', label: 'Sözleşmeler', icon: ScrollText },
   { to: '/projects', label: 'Projeler', icon: Briefcase },
-  { to: '/billings', label: 'Ödemeler', icon: CircleDollarSign },
+  { to: '/finance', label: 'Gelir / Gider', icon: Wallet },
   { to: '/clients', label: 'Müşteriler', icon: Building2 },
   { to: '/personnel', label: 'Personel', icon: UserCog },
   { to: '/users', label: 'Kullanıcılar', icon: UsersIcon },

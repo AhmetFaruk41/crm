@@ -12,10 +12,12 @@ import { ClientsList, ClientForm } from './pages/Clients';
 import { OffersList, OfferForm } from './pages/Offers';
 import { OfferTemplatesList, OfferTemplateForm } from './pages/OfferTemplates';
 import { AgreementsList, AgreementForm } from './pages/Agreements';
-import { ProjectsList, ProjectForm } from './pages/Projects';
+import { ProjectsList, ProjectDetail, ProjectForm } from './pages/Projects';
 import { BillingsList, BillingsDetail } from './pages/Billings';
 import { PersonnelList, PersonnelForm } from './pages/Personnel';
 import { DomainsList, DomainForm } from './pages/Domains';
+import Finance from './pages/Finance';
+import { LeadsList, LeadDetail, LeadForm } from './pages/Leads';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -41,6 +43,11 @@ export default function App() {
         <Route element={<Protected><Layout /></Protected>}>
           <Route index element={<Dashboard />} />
 
+          <Route path="leads" element={<LeadsList />} />
+          <Route path="leads/new" element={<LeadForm />} />
+          <Route path="leads/:id" element={<LeadDetail />} />
+          <Route path="leads/:id/edit" element={<LeadForm />} />
+
           <Route path="offers" element={<OffersList />} />
           <Route path="offers/new" element={<OfferForm />} />
           <Route path="offers/:id/edit" element={<OfferForm />} />
@@ -55,10 +62,13 @@ export default function App() {
 
           <Route path="projects" element={<ProjectsList />} />
           <Route path="projects/new" element={<ProjectForm />} />
+          <Route path="projects/:offerId" element={<ProjectDetail />} />
           <Route path="projects/:offerId/edit" element={<ProjectForm />} />
 
           <Route path="billings" element={<BillingsList />} />
           <Route path="billings/:offerId" element={<BillingsDetail />} />
+
+          <Route path="finance" element={<Finance />} />
 
           <Route path="clients" element={<ClientsList />} />
           <Route path="clients/new" element={<ClientForm />} />

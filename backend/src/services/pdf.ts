@@ -32,7 +32,7 @@ const C = {
 };
 
 const trMoney = (n: number, currency = '₺') =>
-  new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(n)) + ' ' + currency;
+  new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n) + ' ' + currency;
 
 const stripHtml = (s: string | null | undefined) => {
   if (!s) return '';
@@ -292,7 +292,7 @@ export async function generateOfferPdf(input: OfferPdfInput): Promise<Buffer> {
   };
 
   const annexPages: Content[] = matters
-    .map((m, i) => {
+    .map((m, i): Content | null => {
       const extra = stripHtml(m.matter_extra);
       if (!extra) return null;
       return {
@@ -442,8 +442,8 @@ export async function generateAgreementPdf(input: AgreementPdfInput): Promise<Bu
               { text: trMoney(kdv), alignment: 'right', fontSize: 10, color: C.ink, border: [false, false, false, false], margin: [0, 4, 0, 4] },
             ],
             [
-              { text: 'Genel Toplam', color: C.ink, bold: true, fontSize: 11, border: [false, true, false, false], borderColor: [, C.rule, ,], margin: [0, 8, 16, 4] },
-              { text: trMoney(total), alignment: 'right', bold: true, color: C.ink, fontSize: 12, border: [false, true, false, false], borderColor: [, C.rule, ,], margin: [0, 8, 0, 4] },
+              { text: 'Genel Toplam', color: C.ink, bold: true, fontSize: 11, border: [false, true, false, false], borderColor: [C.rule, C.rule, C.rule, C.rule], margin: [0, 8, 16, 4] },
+              { text: trMoney(total), alignment: 'right', bold: true, color: C.ink, fontSize: 12, border: [false, true, false, false], borderColor: [C.rule, C.rule, C.rule, C.rule], margin: [0, 8, 0, 4] },
             ],
           ],
         },

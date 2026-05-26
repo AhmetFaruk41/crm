@@ -25,6 +25,50 @@ export interface Client {
   create_date?: string;
 }
 
+export interface LeadRow {
+  id: number;
+  company_name: string;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+  service_interest: string | null;
+  source: string | null;
+  estimated_value: number | null;
+  stage: string;
+  temperature: string;
+  next_follow_up_date: string | null;
+  notes?: string | null;
+  notes_preview?: string | null;
+  lost_reason: string | null;
+  converted_client_id: number | null;
+  converted_offer_id: number | null;
+  create_date: string;
+  updated_at: string;
+  client_title: string | null;
+  offer_id: number | null;
+  last_activity_date: string | null;
+  activity_count: number;
+}
+
+export interface LeadActivity {
+  id: number;
+  lead_id: number;
+  activity_type: string;
+  description: string;
+  activity_date: string;
+  next_action_date: string | null;
+  user_name: string | null;
+}
+
+export interface LeadOffer {
+  id: number;
+  offer_id: number;
+  offer_status: number;
+  offer_title: string;
+  offer_date: string;
+  final_date: string;
+}
+
 export interface OfferMatter {
   id?: number;
   ordering?: number;
@@ -50,6 +94,7 @@ export interface OfferRow {
   offerFinalDate: string;
   clientTitle: string | null;
   clientID: number | null;
+  leadID?: number | null;
 }
 
 export interface Offer {
@@ -88,10 +133,18 @@ export interface ProjectRow {
   status: number;
   type: number;
   title: string;
+  description: string | null;
+  priority: number;
+  progress: number;
+  createDate: string;
+  updatedAt: string;
+  completedAt: string | null;
   projectStartDate: string;
   projectEndDate: string;
   price: number;
   kdv: number;
+  paid: number;
+  total: number;
   clientTitle: string | null;
   clientID: number | null;
   personelName: string | null;

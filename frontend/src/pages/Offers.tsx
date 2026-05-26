@@ -113,6 +113,8 @@ export function OfferForm() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
   const templateIdParam = searchParams.get('template');
+  const leadIdParam = searchParams.get('lead');
+  const clientIdParam = searchParams.get('client');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -172,6 +174,9 @@ export function OfferForm() {
       if (!editing) {
         const nr = await api.get<{ next: number }>('/offers/next-id');
         setOfferNum(nr.data.next);
+        if (clientIdParam) {
+          setData((d) => ({ ...d, client_id: Number(clientIdParam) }));
+        }
         if (templateIdParam) {
           await applyTemplate(Number(templateIdParam));
         }
@@ -193,7 +198,7 @@ export function OfferForm() {
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, editing, templateIdParam]);
+  }, [id, editing, templateIdParam, clientIdParam]);
 
   async function saveAsTemplate() {
     if (!tplName.trim()) {
@@ -252,7 +257,7 @@ export function OfferForm() {
         await api.put(`/offers/${id}`, { ...data, matters });
         toast.success('Güncellendi');
       } else {
-        await api.post('/offers', { ...data, offer_id: offerNum, matters });
+        await api.post('/offers', { ...data, lead_id: leadIdParam ? Number(leadIdParam) : null, offer_id: offerNum, matters });
         toast.success('Oluşturuldu');
       }
       nav('/offers');

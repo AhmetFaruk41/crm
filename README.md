@@ -6,6 +6,10 @@ Teklif / sözleşme / proje yönetim paneli — React + Node.js + MySQL.
 
 ### 1) Veritabanı (tek seferlik)
 
+> `backend/src/db/schema.sql` ve `backend/src/db/seed.sql` yalnızca boş/yeni
+> kurulum içindir. Mevcut veya canlı bir veritabanında `schema.sql` çalıştırmak
+> tabloları sileceği için veri kaybına neden olur.
+
 ```bash
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS noname_crm DEFAULT CHARSET=utf8mb4;"
 mysql -u root -p noname_crm < backend/src/db/schema.sql
@@ -16,6 +20,22 @@ mysql -u root -p noname_crm < backend/src/db/seed.sql
 > `schema.sql` dosyasındaki `offer_templates` ve `offer_template_matters`
 > CREATE bloklarını çalıştırın, ardından `seed.sql` içinden örnek şablon
 > INSERT'lerini elle koşturabilirsiniz.
+
+Mevcut bir kurulumda proje takibi Faz 1 alanlarını eklemek için önce
+yinelenen proje kontrolü dahil migration dosyasını inceleyip uygulayın:
+
+```bash
+mysql -u root -p noname_crm < backend/src/db/migrations/001_project_tracking_phase1.sql
+mysql -u root -p noname_crm < backend/src/db/migrations/002_project_workflow_and_payment_plans.sql
+mysql -u root -p noname_crm < backend/src/db/migrations/003_finance_transactions.sql
+mysql -u root -p noname_crm < backend/src/db/migrations/004_sales_leads_pipeline.sql
+```
+
+Canlı veritabanı migration ve aday içe aktarma güvenlik adımları:
+[`docs/production-data-safety.md`](docs/production-data-safety.md).
+
+Geliştirme yol haritası ve tamamlanan adımlar:
+[`docs/projects-roadmap.md`](docs/projects-roadmap.md).
 
 ### 2) Backend
 
@@ -37,12 +57,14 @@ npm run dev          # http://localhost:5173
 
 ## Modüller
 
-- **Anasayfa** – istatistikler, geciken teklifler
+- **Anasayfa** – istatistikler, satış fırsatları, takip hatırlatmaları, geciken teklifler
+- **Potansiyel Müşteriler** – satış hunisi, aday müşteri, görüşme geçmişi, takip tarihi ve teklife dönüştürme
 - **Teklifler** – CRUD + durum + revize + PDF, şablondan oluşturma
 - **Teklif Şablonları** – sık kullanılan teklifler için hazır şablonlar (sunucu, web, e-ticaret, mobil, dijital pazarlama, grafik, video); tekliften şablon oluşturma desteği
 - **Sözleşmeler** – tekliften sözleşme oluştur, madde seç, PDF
 - **Projeler** – sözleşmeden proje başlat, durum yönetimi
 - **Ödemeler** – proje bazlı ödeme takibi
+- **Gelir / Gider** – otomatik tahsilat gelirleri, ek gelir ve giderler, dönem özeti
 - **Müşteriler** – CRUD + logo upload
 - **Personel** – proje atanan kişiler
 - **Kullanıcılar** – panel kullanıcıları, yetki düzeyi

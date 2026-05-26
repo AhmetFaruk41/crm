@@ -2,14 +2,24 @@ const aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağus
 
 export function formatDate(input?: string | null): string {
   if (!input) return '';
-  const d = new Date(input.includes('T') ? input : input + 'T00:00:00');
+  const normalized = input.includes(' ') ? input.replace(' ', 'T') : input;
+  const d = new Date(normalized.includes('T') ? normalized : normalized + 'T00:00:00');
   if (isNaN(d.getTime())) return '';
   return `${d.getDate()} ${aylar[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+export function formatDateTime(input?: string | null): string {
+  if (!input) return '';
+  const normalized = input.includes(' ') ? input.replace(' ', 'T') : input;
+  const d = new Date(normalized.includes('T') ? normalized : normalized + 'T00:00:00');
+  if (isNaN(d.getTime())) return '';
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${d.getDate()} ${aylar[d.getMonth()]} ${d.getFullYear()} ${time}`;
+}
+
 export function formatMoney(n: number | null | undefined, currency = '₺'): string {
   if (n == null) return '-';
-  return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(Math.round(Number(n))) + ' ' + currency;
+  return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(n)) + ' ' + currency;
 }
 
 export function truncate(s: string | null | undefined, len = 80): string {
@@ -19,11 +29,17 @@ export function truncate(s: string | null | undefined, len = 80): string {
 }
 
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISO(new Date());
 }
 
 export function addDaysISO(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return localISO(d);
+}
+
+function localISO(d: Date): string {
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
 }

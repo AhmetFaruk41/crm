@@ -48,6 +48,13 @@ agreementsRouter.post('/', asyncHandler(async (req, res) => {
   try {
     await conn.beginTransaction();
     await conn.execute('UPDATE offers SET offer_status = 2 WHERE offer_id = ?', [offer_id]);
+    if (offer.lead_id) {
+      await conn.execute('UPDATE leads SET stage = ? WHERE id = ?', ['won', offer.lead_id]);
+      await conn.execute(
+        'INSERT INTO lead_activities (lead_id, activity_type, description, activity_date, user_id) VALUES (?, ?, ?, NOW(), ?)',
+        [offer.lead_id, 'status', `#${offer_id} numaralı teklif için sözleşme oluşturuldu; satış kazanıldı.`, req.user?.id ?? null]
+      );
+    }
 
     const [aRes] = await conn.execute(
       'INSERT INTO agreements (client_id, offer_id, agreement_type, agreement_status, agreement_title, start_date, end_date, price, kdv) VALUES (?, ?, ?, 0, ?, ?, ?, NULL, 20)',
