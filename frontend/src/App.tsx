@@ -17,7 +17,7 @@ import { BillingsList, BillingsDetail } from './pages/Billings';
 import { PersonnelList, PersonnelForm } from './pages/Personnel';
 import { DomainsList, DomainForm } from './pages/Domains';
 import Finance from './pages/Finance';
-import { LeadsList, LeadDetail, LeadForm } from './pages/Leads';
+import { LeadsList, LeadDetailModal, LeadForm } from './pages/Leads';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -43,10 +43,11 @@ export default function App() {
         <Route element={<Protected><Layout /></Protected>}>
           <Route index element={<Dashboard />} />
 
-          <Route path="leads" element={<LeadsList />} />
           <Route path="leads/new" element={<LeadForm />} />
-          <Route path="leads/:id" element={<LeadDetail />} />
           <Route path="leads/:id/edit" element={<LeadForm />} />
+          <Route path="leads" element={<LeadsList />}>
+            <Route path=":id" element={<LeadDetailModal />} />
+          </Route>
 
           <Route path="offers" element={<OffersList />} />
           <Route path="offers/new" element={<OfferForm />} />

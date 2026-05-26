@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type DragEvent, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, CalendarClock, Columns3, ExternalLink, Flame, Globe, List, Mail, MapPin, MessageSquarePlus, Pencil, Phone, Plus, Search, Star, Trash2, UserRoundPlus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react';
+import { Link, Outlet, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { ArrowRight, CalendarClock, Check, Columns3, ExternalLink, Flame, Globe, List, Mail, MapPin, MessageSquarePlus, Pencil, Phone, Plus, Search, Star, Tag, Trash2, UserRoundPlus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
@@ -9,7 +9,7 @@ import { Field, FieldRow } from '../components/Field';
 import Loading from '../components/Loading';
 import { confirm } from '../components/ConfirmDialog';
 import { formatDate, formatDateTime, formatMoney, todayISO } from '../lib/format';
-import type { LeadActivity, LeadOffer, LeadRow } from '../types';
+import type { LeadActivity, LeadOffer, LeadRow, LeadTag } from '../types';
 
 export const LEAD_STAGES = [
   { value: 'new', label: 'Yeni Aday' },
@@ -56,6 +56,27 @@ const OPPORTUNITY_LABELS: Record<string, string> = {
   menu_qr: 'QR Menü',
   erp_lite: 'Temel ERP',
 };
+
+const TAG_COLOR_OPTIONS: { value: string; label: string; chip: string; dot: string }[] = [
+  { value: 'slate', label: 'Gri', chip: 'bg-slate-100 text-slate-700 ring-slate-200', dot: 'bg-slate-400' },
+  { value: 'red', label: 'Kırmızı', chip: 'bg-red-50 text-red-700 ring-red-200', dot: 'bg-red-500' },
+  { value: 'amber', label: 'Sarı', chip: 'bg-amber-50 text-amber-800 ring-amber-200', dot: 'bg-amber-500' },
+  { value: 'lime', label: 'Açık Yeşil', chip: 'bg-lime-50 text-lime-800 ring-lime-200', dot: 'bg-lime-500' },
+  { value: 'emerald', label: 'Yeşil', chip: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
+  { value: 'sky', label: 'Mavi', chip: 'bg-sky-50 text-sky-700 ring-sky-200', dot: 'bg-sky-500' },
+  { value: 'indigo', label: 'Lacivert', chip: 'bg-indigo-50 text-indigo-700 ring-indigo-200', dot: 'bg-indigo-500' },
+  { value: 'violet', label: 'Mor', chip: 'bg-violet-50 text-violet-700 ring-violet-200', dot: 'bg-violet-500' },
+  { value: 'pink', label: 'Pembe', chip: 'bg-pink-50 text-pink-700 ring-pink-200', dot: 'bg-pink-500' },
+  { value: 'rose', label: 'Gül', chip: 'bg-rose-50 text-rose-700 ring-rose-200', dot: 'bg-rose-500' },
+];
+
+function tagChipClass(color: string): string {
+  return TAG_COLOR_OPTIONS.find((item) => item.value === color)?.chip ?? TAG_COLOR_OPTIONS[0].chip;
+}
+
+function tagDotClass(color: string): string {
+  return TAG_COLOR_OPTIONS.find((item) => item.value === color)?.dot ?? TAG_COLOR_OPTIONS[0].dot;
+}
 
 interface ImportedLeadDetails {
   importInfo: string;
@@ -136,19 +157,131 @@ function leadSector(lead: LeadRow): string {
   return previewMatch?.[1] || lead.service_interest || 'Hizmet bilgisi yok';
 }
 
-function LeadKanbanCard({ lead, onStageChange }: { lead: LeadRow; onStageChange: (lead: LeadRow, stage: string) => void }) {
+function InlineTagEditor({ leadTags, allTags, onChange, openUp = false }: {
+  leadTags: LeadTag[];
+  allTags: LeadTag[];
+  onChange: (tagIds: number[]) => Promise<void>;
+  openUp?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selectedIds = useMemo(() => new Set(leadTags.map((t) => t.id)), [leadTags]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  async function toggle(tagId: number) {
+    setBusy(true);
+    try {
+      const next = new Set(selectedIds);
+      if (next.has(tagId)) next.delete(tagId);
+      else next.add(tagId);
+      await onChange(Array.from(next));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeTag(tagId: number) {
+    setBusy(true);
+    try {
+      await onChange(leadTags.filter((t) => t.id !== tagId).map((t) => t.id));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-wrap items-center gap-1">
+        {leadTags.map((tag) => (
+          <span key={tag.id} className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset ${tagChipClass(tag.color)}`}>
+            {tag.name}
+            <button type="button" disabled={busy} className="opacity-60 hover:opacity-100" onClick={() => removeTag(tag.id)} title="Etiketi kaldır">
+              <X size={10} />
+            </button>
+          </span>
+        ))}
+        <button
+          type="button"
+          className="inline-flex items-center gap-0.5 rounded-md border border-dashed border-ink-300 px-1.5 py-0.5 text-[11px] text-ink-500 hover:bg-ink-50"
+          onClick={() => setOpen((v) => !v)}
+          title="Etiket ekle"
+        >
+          <Plus size={11} /> Etiket
+        </button>
+      </div>
+      {open && (
+        <div className={`absolute z-30 ${openUp ? 'bottom-full mb-1' : 'mt-1'} min-w-44 max-w-64 max-h-56 overflow-y-auto bg-white border border-ink-200 rounded-md shadow-lg p-2`}>
+          {allTags.length === 0 ? (
+            <div className="text-xs text-ink-500 px-1 py-1.5">Etiket tanımlı değil. "Etiketler" butonundan ekleyin.</div>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {allTags.map((tag) => {
+                const selected = selectedIds.has(tag.id);
+                return (
+                  <button
+                    type="button"
+                    key={tag.id}
+                    disabled={busy}
+                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset transition-colors ${selected ? tagChipClass(tag.color) : 'bg-white text-ink-700 ring-ink-200 hover:bg-ink-50'}`}
+                    onClick={() => toggle(tag.id)}
+                  >
+                    {selected && <Check size={10} />} {tag.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LeadKanbanCard({ lead, allTags, onStageChange, onOpen, onSetTags }: {
+  lead: LeadRow;
+  allTags: LeadTag[];
+  onStageChange: (lead: LeadRow, stage: string) => void;
+  onOpen: (leadId: number) => void;
+  onSetTags: (leadId: number, tagIds: number[]) => Promise<void>;
+}) {
   const temp = temperatureBadge(lead.temperature);
   return (
     <article
       className="bg-white border border-ink-200 rounded-lg p-3 shadow-sm hover:shadow transition-shadow cursor-grab active:cursor-grabbing"
       draggable
       onDragStart={(event) => event.dataTransfer.setData('text/lead-id', String(lead.id))}
+      onClick={() => onOpen(lead.id)}
     >
       <div className="flex items-start justify-between gap-2">
-        <Link to={`/leads/${lead.id}`} className="font-medium text-sm hover:underline leading-snug">{lead.company_name}</Link>
+        <button type="button" className="font-medium text-sm hover:underline leading-snug text-left" onClick={(event) => { event.stopPropagation(); onOpen(lead.id); }}>
+          {lead.company_name}
+        </button>
         <span className={`${temp.cls} shrink-0`}>{temp.label}</span>
       </div>
       <div className="text-xs text-ink-500 mt-1">{leadSector(lead)}</div>
+      <div className="mt-2">
+        <InlineTagEditor
+          leadTags={lead.tags ?? []}
+          allTags={allTags}
+          onChange={(tagIds) => onSetTags(lead.id, tagIds)}
+        />
+      </div>
       <div className="space-y-1 mt-3 text-xs text-ink-600">
         {lead.phone && <div className="flex items-center gap-1.5"><Phone size={12} /> {lead.phone}</div>}
         {lead.email && <div className="flex items-center gap-1.5 min-w-0"><Mail size={12} className="shrink-0" /><span className="truncate">{lead.email}</span></div>}
@@ -160,7 +293,7 @@ function LeadKanbanCard({ lead, onStageChange }: { lead: LeadRow; onStageChange:
       </div>
       <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-ink-100">
         {lead.estimated_value != null ? <div className="text-xs font-medium">{formatMoney(lead.estimated_value)}</div> : <div className="text-xs text-ink-400">Tutar yok</div>}
-        <Link to={`/leads/${lead.id}`} className="text-xs text-ink-600 hover:underline">Detay</Link>
+        <button type="button" className="text-xs text-ink-600 hover:underline" onClick={(event) => { event.stopPropagation(); onOpen(lead.id); }}>Detay</button>
       </div>
       <select
         className="input py-1.5 text-xs mt-3"
@@ -175,22 +308,42 @@ function LeadKanbanCard({ lead, onStageChange }: { lead: LeadRow; onStageChange:
   );
 }
 
+interface LeadsListContext {
+  reload: () => Promise<void>;
+  tags: LeadTag[];
+  reloadTags: () => Promise<void>;
+}
+
+export function useLeadsListContext(): LeadsListContext {
+  return useOutletContext<LeadsListContext>();
+}
+
 export function LeadsList() {
   const [rows, setRows] = useState<LeadRow[] | null>(null);
+  const [tags, setTags] = useState<LeadTag[]>([]);
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [search, setSearch] = useState('');
   const [stage, setStage] = useState('');
   const [temperature, setTemperature] = useState('');
   const [followUp, setFollowUp] = useState('');
   const [source, setSource] = useState('');
+  const [tagFilter, setTagFilter] = useState<string>('');
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [tagsManagerOpen, setTagsManagerOpen] = useState(false);
+  const navigate = useNavigate();
 
-  async function load() {
+  const load = useCallback(async () => {
     const r = await api.get<LeadRow[]>('/leads');
     setRows(r.data);
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  const loadTags = useCallback(async () => {
+    const r = await api.get<LeadTag[]>('/leads/tags');
+    setTags(r.data);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadTags(); }, [loadTags]);
 
   async function del(id: number) {
     if (!await confirm({ message: 'Potansiyel müşteri kaydı silinsin mi?', danger: true, confirmLabel: 'Sil' })) return;
@@ -222,6 +375,16 @@ export function LeadsList() {
     if (lead) await changeStage(lead, targetStage);
   }
 
+  const openLead = useCallback((id: number) => {
+    navigate(`/leads/${id}`);
+  }, [navigate]);
+
+  const setLeadTags = useCallback(async (leadId: number, tagIds: number[]) => {
+    const r = await api.put<{ tags: LeadTag[] }>(`/leads/${leadId}/tags`, { tag_ids: tagIds });
+    setRows((current) => current?.map((row) => row.id === leadId ? { ...row, tags: r.data.tags } : row) ?? null);
+    await loadTags();
+  }, [loadTags]);
+
   const sources = useMemo(() => Array.from(new Set((rows ?? []).map((row) => row.source).filter(Boolean) as string[])).sort(), [rows]);
   const filtered = useMemo(() => (rows ?? []).filter((lead) => {
     if (stage && lead.stage !== stage) return false;
@@ -229,13 +392,17 @@ export function LeadsList() {
     if (source && lead.source !== source) return false;
     if (followUp === 'today' && lead.next_follow_up_date !== todayISO()) return false;
     if (followUp === 'overdue' && !isOverdue(lead)) return false;
+    if (tagFilter) {
+      const tagId = Number(tagFilter);
+      if (!lead.tags?.some((t) => t.id === tagId)) return false;
+    }
     if (search.trim()) {
       const query = search.trim().toLocaleLowerCase('tr-TR');
-      const haystack = `${lead.company_name} ${lead.contact_name ?? ''} ${lead.phone ?? ''} ${lead.email ?? ''} ${lead.service_interest ?? ''} ${lead.source ?? ''} ${lead.notes_preview ?? lead.notes ?? ''}`.toLocaleLowerCase('tr-TR');
+      const haystack = `${lead.company_name} ${lead.contact_name ?? ''} ${lead.phone ?? ''} ${lead.email ?? ''} ${lead.service_interest ?? ''} ${lead.source ?? ''} ${lead.notes_preview ?? lead.notes ?? ''} ${(lead.tags ?? []).map((t) => t.name).join(' ')}`.toLocaleLowerCase('tr-TR');
       if (!haystack.includes(query)) return false;
     }
     return true;
-  }), [rows, stage, temperature, source, followUp, search]);
+  }), [rows, stage, temperature, source, followUp, search, tagFilter]);
 
   const summary = useMemo(() => ({
     open: (rows ?? []).filter((r) => !['won', 'lost'].includes(r.stage)).length,
@@ -256,8 +423,15 @@ export function LeadsList() {
   const cols: Column<LeadRow>[] = [
     { key: 'company_name', header: 'Aday / Firma', sortValue: (r) => r.company_name, render: (r) => (
       <div>
-        <Link to={`/leads/${r.id}`} className="font-medium hover:underline">{r.company_name}</Link>
+        <button type="button" className="font-medium hover:underline text-left" onClick={() => openLead(r.id)}>{r.company_name}</button>
         <div className="text-xs text-ink-500">{r.contact_name || r.phone || r.email || '-'}</div>
+        <div className="mt-1.5">
+          <InlineTagEditor
+            leadTags={r.tags ?? []}
+            allTags={tags}
+            onChange={(tagIds) => setLeadTags(r.id, tagIds)}
+          />
+        </div>
       </div>
     ) },
     { key: 'stage', header: 'Aşama', sortValue: (r) => r.stage, render: (r) => (
@@ -279,7 +453,7 @@ export function LeadsList() {
     { key: 'source', header: 'Kaynak', render: (r) => r.source || '-' },
     { key: '_actions', header: '', width: '120px', render: (r) => (
       <div className="flex gap-1">
-        <Link to={`/leads/${r.id}`} className="btn-ghost p-2" title="Detay"><ArrowRight size={14} /></Link>
+        <button type="button" onClick={() => openLead(r.id)} className="btn-ghost p-2" title="Detay"><ArrowRight size={14} /></button>
         <Link to={`/leads/${r.id}/edit`} className="btn-ghost p-2" title="Düzenle"><Pencil size={14} /></Link>
         {!r.converted_client_id && !r.converted_offer_id && (
           <button onClick={() => del(r.id)} className="btn-ghost p-2 text-red-600" title="Sil"><Trash2 size={14} /></button>
@@ -297,6 +471,7 @@ export function LeadsList() {
         crumbs={[{ label: 'Anasayfa', to: '/' }, { label: 'Potansiyel Müşteriler' }]}
         actions={(
           <div className="flex gap-2 flex-wrap">
+            <button type="button" onClick={() => setTagsManagerOpen(true)} className="btn-secondary"><Tag size={16} /> Etiketler</button>
             <div className="inline-flex rounded-md border border-ink-200 bg-white p-1">
               <button type="button" onClick={() => setView('kanban')} className={`btn py-1.5 px-3 ${view === 'kanban' ? 'bg-ink-900 text-white' : 'text-ink-700'}`}><Columns3 size={15} /> Kanban</button>
               <button type="button" onClick={() => setView('list')} className={`btn py-1.5 px-3 ${view === 'list' ? 'bg-ink-900 text-white' : 'text-ink-700'}`}><List size={15} /> Liste</button>
@@ -318,7 +493,7 @@ export function LeadsList() {
           <Field label="Ara" className="xl:flex-1">
             <div className="relative">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-              <input className="input pl-9" placeholder="Firma, e-posta, telefon, ilçe veya sektör ara..." value={search} onChange={(event) => setSearch(event.target.value)} />
+              <input className="input pl-9" placeholder="Firma, e-posta, telefon, etiket, ilçe veya sektör ara..." value={search} onChange={(event) => setSearch(event.target.value)} />
             </div>
           </Field>
           <Field label="Satış Aşaması">
@@ -331,6 +506,12 @@ export function LeadsList() {
             <select className="input" value={temperature} onChange={(e) => setTemperature(e.target.value)}>
               <option value="">Tümü</option>
               {TEMPERATURES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Etiket">
+            <select className="input" value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+              <option value="">Tümü</option>
+              {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </Field>
           <Field label="Takip Durumu">
@@ -349,8 +530,8 @@ export function LeadsList() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-ink-100">
           <div className="text-sm text-ink-500"><span className="font-medium text-ink-800">{filtered.length}</span> aday görüntüleniyor</div>
-          {(search || stage || temperature || followUp || source) && (
-            <button type="button" className="text-sm text-ink-600 hover:underline" onClick={() => { setSearch(''); setStage(''); setTemperature(''); setFollowUp(''); setSource(''); }}>
+          {(search || stage || temperature || followUp || source || tagFilter) && (
+            <button type="button" className="text-sm text-ink-600 hover:underline" onClick={() => { setSearch(''); setStage(''); setTemperature(''); setFollowUp(''); setSource(''); setTagFilter(''); }}>
               Filtreleri temizle
             </button>
           )}
@@ -379,7 +560,7 @@ export function LeadsList() {
                 </div>
                 <div className="p-2 space-y-2 min-h-32 max-h-[64vh] overflow-y-auto">
                   {column.rows.slice(0, KANBAN_CARD_LIMIT).map((lead) => (
-                    <LeadKanbanCard key={lead.id} lead={lead} onStageChange={changeStage} />
+                    <LeadKanbanCard key={lead.id} lead={lead} allTags={tags} onStageChange={changeStage} onOpen={openLead} onSetTags={setLeadTags} />
                   ))}
                   {column.rows.length === 0 && <div className="text-sm text-center text-ink-400 py-8">Bu aşamada aday yok</div>}
                   {column.rows.length > KANBAN_CARD_LIMIT && (
@@ -393,6 +574,19 @@ export function LeadsList() {
           </div>
         </div>
       )}
+
+      {tagsManagerOpen && (
+        <TagsManagerModal
+          tags={tags}
+          onClose={() => setTagsManagerOpen(false)}
+          onChanged={async () => {
+            await loadTags();
+            await load();
+          }}
+        />
+      )}
+
+      <Outlet context={{ reload: load, tags, reloadTags: loadTags } satisfies LeadsListContext} />
     </div>
   );
 }
@@ -542,19 +736,216 @@ function localDateTimeInput(): string {
   return new Date(now.getTime() - offset).toISOString().slice(0, 16);
 }
 
-export function LeadDetail() {
+function LeadTagPicker({ leadTags, allTags, onChange, busy }: { leadTags: LeadTag[]; allTags: LeadTag[]; onChange: (tagIds: number[]) => Promise<void>; busy: boolean }) {
+  const [open, setOpen] = useState(false);
+  const selectedIds = useMemo(() => new Set(leadTags.map((t) => t.id)), [leadTags]);
+
+  async function toggle(tagId: number) {
+    const next = new Set(selectedIds);
+    if (next.has(tagId)) next.delete(tagId);
+    else next.add(tagId);
+    await onChange(Array.from(next));
+  }
+
+  async function clearAll() {
+    await onChange([]);
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {leadTags.map((tag) => (
+          <span key={tag.id} className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${tagChipClass(tag.color)}`}>
+            {tag.name}
+            <button type="button" disabled={busy} className="hover:text-ink-900" onClick={() => toggle(tag.id)} title="Kaldır">
+              <X size={11} />
+            </button>
+          </span>
+        ))}
+        {leadTags.length === 0 && <span className="text-xs text-ink-500">Etiket yok</span>}
+        <button type="button" className="text-xs px-2 py-0.5 rounded-md border border-dashed border-ink-300 text-ink-600 hover:bg-ink-50" onClick={() => setOpen((v) => !v)}>
+          <Plus size={11} className="inline -mt-0.5" /> Etiket Ekle
+        </button>
+        {leadTags.length > 0 && (
+          <button type="button" disabled={busy} className="text-xs text-ink-500 hover:text-ink-800" onClick={clearAll}>Temizle</button>
+        )}
+      </div>
+      {open && (
+        <div className="mt-2 border border-ink-200 rounded-lg p-2 bg-ink-50 max-h-48 overflow-y-auto">
+          {allTags.length === 0 ? (
+            <div className="text-xs text-ink-500 px-1 py-2">Henüz etiket tanımlı değil. Üst menüden "Etiketler" ile oluşturun.</div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {allTags.map((tag) => {
+                const selected = selectedIds.has(tag.id);
+                return (
+                  <button
+                    type="button"
+                    key={tag.id}
+                    disabled={busy}
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset transition-colors ${selected ? tagChipClass(tag.color) : 'bg-white text-ink-700 ring-ink-200 hover:bg-ink-100'}`}
+                    onClick={() => toggle(tag.id)}
+                  >
+                    {selected && <Check size={11} />} {tag.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TagsManagerModal({ tags, onClose, onChanged }: { tags: LeadTag[]; onClose: () => void; onChanged: () => Promise<void> }) {
+  const [name, setName] = useState('');
+  const [color, setColor] = useState('slate');
+  const [editing, setEditing] = useState<{ id: number; name: string; color: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function create(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setBusy(true);
+    try {
+      await api.post('/leads/tags', { name: name.trim(), color });
+      toast.success('Etiket eklendi');
+      setName('');
+      setColor('slate');
+      await onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    if (!editing.name.trim()) return;
+    setBusy(true);
+    try {
+      await api.put(`/leads/tags/${editing.id}`, { name: editing.name.trim(), color: editing.color });
+      toast.success('Etiket güncellendi');
+      setEditing(null);
+      await onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(tag: LeadTag) {
+    if (!await confirm({ message: `"${tag.name}" etiketi silinsin mi? Atandığı tüm adaylardan kaldırılır.`, danger: true, confirmLabel: 'Sil' })) return;
+    setBusy(true);
+    try {
+      await api.delete(`/leads/tags/${tag.id}`);
+      toast.success('Etiket silindi');
+      await onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-ink-200 flex items-center justify-between">
+          <h3 className="font-semibold flex items-center gap-2"><Tag size={16} /> Aday Etiketleri</h3>
+          <button type="button" onClick={onClose} className="text-ink-500 hover:text-ink-800"><X size={18} /></button>
+        </div>
+        <div className="overflow-y-auto px-5 py-4 space-y-4">
+          <form onSubmit={create} className="space-y-3 border-b border-ink-100 pb-4">
+            <div className="text-sm font-medium">Yeni Etiket</div>
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+              <input className="input" placeholder="Örn. Acil, VIP, Eski Müşteri" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+              <button type="submit" disabled={busy || !name.trim()} className="btn-primary"><Plus size={15} /> Ekle</button>
+            </div>
+            <ColorPicker value={color} onChange={setColor} />
+          </form>
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Mevcut Etiketler</div>
+            {tags.length === 0 ? (
+              <div className="text-sm text-ink-500">Henüz etiket yok.</div>
+            ) : (
+              tags.map((tag) => (
+                <div key={tag.id} className="border border-ink-100 rounded-lg p-3">
+                  {editing?.id === tag.id ? (
+                    <div className="space-y-2">
+                      <input className="input" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} maxLength={80} />
+                      <ColorPicker value={editing.color} onChange={(c) => setEditing({ ...editing, color: c })} />
+                      <div className="flex gap-2">
+                        <button type="button" className="btn-primary" disabled={busy} onClick={saveEdit}>Kaydet</button>
+                        <button type="button" className="btn-secondary" onClick={() => setEditing(null)}>İptal</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${tagChipClass(tag.color)}`}>{tag.name}</span>
+                        {typeof tag.usage_count === 'number' && (
+                          <span className="text-xs text-ink-500">{tag.usage_count} aday</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button type="button" className="btn-ghost p-2" onClick={() => setEditing({ id: tag.id, name: tag.name, color: tag.color })} title="Düzenle"><Pencil size={14} /></button>
+                        <button type="button" className="btn-ghost p-2 text-red-600" onClick={() => remove(tag)} title="Sil"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        <div className="px-5 py-3 border-t border-ink-200 flex justify-end">
+          <button type="button" className="btn-secondary" onClick={onClose}>Kapat</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ColorPicker({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {TAG_COLOR_OPTIONS.map((option) => (
+        <button
+          type="button"
+          key={option.value}
+          onClick={() => onChange(option.value)}
+          title={option.label}
+          className={`h-7 w-7 rounded-full ring-2 transition ${value === option.value ? 'ring-ink-800' : 'ring-transparent hover:ring-ink-200'} ${option.dot}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function LeadDetailModal() {
   const { id } = useParams();
   const nav = useNavigate();
+  const ctx = useLeadsListContext();
   const [data, setData] = useState<{ lead: LeadRow; activities: LeadActivity[]; offers: LeadOffer[] } | null>(null);
   const [activity, setActivity] = useState({ activity_type: 'call', description: '', activity_date: localDateTimeInput(), next_action_date: '' });
   const [busy, setBusy] = useState(false);
+  const [tagBusy, setTagBusy] = useState(false);
 
-  async function load() {
+  const close = useCallback(() => nav('/leads'), [nav]);
+
+  const load = useCallback(async () => {
     const r = await api.get<{ lead: LeadRow; activities: LeadActivity[]; offers: LeadOffer[] }>(`/leads/${id}`);
     setData(r.data);
-  }
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') close();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [close]);
 
   async function addActivity(e: FormEvent) {
     e.preventDefault();
@@ -563,7 +954,8 @@ export function LeadDetail() {
       await api.post(`/leads/${id}/activities`, activity);
       toast.success('Takip kaydı eklendi');
       setActivity({ activity_type: 'call', description: '', activity_date: localDateTimeInput(), next_action_date: '' });
-      load();
+      await load();
+      await ctx.reload();
     } finally {
       setBusy(false);
     }
@@ -572,7 +964,7 @@ export function LeadDetail() {
   async function removeActivity(activityId: number) {
     if (!await confirm({ message: 'Bu takip kaydı silinsin mi?', danger: true, confirmLabel: 'Sil' })) return;
     await api.delete(`/leads/${id}/activities/${activityId}`);
-    load();
+    await load();
   }
 
   async function prepareOffer() {
@@ -581,30 +973,83 @@ export function LeadDetail() {
     nav(`/offers/new?lead=${r.data.lead_id}&client=${r.data.client_id}`);
   }
 
-  if (!data) return <Loading />;
+  async function setTags(tagIds: number[]) {
+    setTagBusy(true);
+    try {
+      const r = await api.put<{ tags: LeadTag[] }>(`/leads/${id}/tags`, { tag_ids: tagIds });
+      setData((current) => current ? { ...current, lead: { ...current.lead, tags: r.data.tags } } : current);
+      await ctx.reload();
+      await ctx.reloadTags();
+    } finally {
+      setTagBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/40 overflow-y-auto" onClick={close}>
+      <div className="my-4 sm:my-8 w-full max-w-6xl bg-ink-50 rounded-xl shadow-xl mx-2 sm:mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 z-10 bg-white border-b border-ink-200 rounded-t-xl px-5 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-xs text-ink-500">Potansiyel Müşteri</div>
+            <div className="font-semibold truncate">{data?.lead.company_name ?? 'Yükleniyor...'}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link to={`/leads/${id}/edit`} className="btn-secondary"><Pencil size={15} /> Düzenle</Link>
+            <button type="button" onClick={prepareOffer} className="btn-primary"><UserRoundPlus size={15} /> Teklif Hazırla</button>
+            <button type="button" onClick={close} className="btn-ghost p-2" title="Kapat (Esc)"><X size={18} /></button>
+          </div>
+        </div>
+
+        {!data ? (
+          <div className="p-12"><Loading /></div>
+        ) : (
+          <LeadDetailContent
+            data={data}
+            tagsAll={ctx.tags}
+            tagBusy={tagBusy}
+            onSetTags={setTags}
+            activity={activity}
+            onActivityChange={setActivity}
+            onAddActivity={addActivity}
+            onRemoveActivity={removeActivity}
+            busy={busy}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LeadDetailContent({
+  data, tagsAll, tagBusy, onSetTags,
+  activity, onActivityChange, onAddActivity, onRemoveActivity, busy,
+}: {
+  data: { lead: LeadRow; activities: LeadActivity[]; offers: LeadOffer[] };
+  tagsAll: LeadTag[];
+  tagBusy: boolean;
+  onSetTags: (ids: number[]) => Promise<void>;
+  activity: { activity_type: string; description: string; activity_date: string; next_action_date: string };
+  onActivityChange: (next: { activity_type: string; description: string; activity_date: string; next_action_date: string }) => void;
+  onAddActivity: (e: FormEvent) => Promise<void>;
+  onRemoveActivity: (id: number) => Promise<void>;
+  busy: boolean;
+}) {
   const { lead, activities, offers } = data;
   const temp = temperatureBadge(lead.temperature);
   const importedDetails = parseImportedNotes(lead.notes);
 
   return (
-    <div>
-      <PageHeader
-        title={lead.company_name}
-        crumbs={[{ label: 'Anasayfa', to: '/' }, { label: 'Potansiyel Müşteriler', to: '/leads' }, { label: lead.company_name }]}
-        actions={(
-          <div className="flex gap-2 flex-wrap">
-            <Link to={`/leads/${id}/edit`} className="btn-secondary"><Pencil size={16} /> Düzenle</Link>
-            <button type="button" onClick={prepareOffer} className="btn-primary"><UserRoundPlus size={16} /> Teklif Hazırla</button>
-          </div>
-        )}
-      />
-
+    <div className="p-4 sm:p-5">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
         <div className="card card-body lg:col-span-2 min-w-0 overflow-hidden">
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4">
             <span className={`badge ${stageBadge(lead.stage)}`}>{stageLabel(lead.stage)}</span>
             <span className={`badge ${temp.cls}`}>{temp.label}</span>
             {isOverdue(lead) && <span className="badge badge-danger">Takip gecikti</span>}
+          </div>
+          <div className="mb-4">
+            <div className="text-xs text-ink-500 mb-1.5 flex items-center gap-1"><Tag size={12} /> Etiketler</div>
+            <LeadTagPicker leadTags={lead.tags ?? []} allTags={tagsAll} onChange={onSetTags} busy={tagBusy} />
           </div>
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div><div className="text-ink-500">Yetkili</div><div>{lead.contact_name || '-'}</div></div>
@@ -697,15 +1142,15 @@ export function LeadDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="card card-body min-w-0">
           <div className="font-semibold mb-4 flex items-center gap-2"><MessageSquarePlus size={17} /> Yeni Takip Kaydı</div>
-          <form className="space-y-3" onSubmit={addActivity}>
+          <form className="space-y-3" onSubmit={onAddActivity}>
             <Field label="İşlem Türü">
-              <select className="input" value={activity.activity_type} onChange={(e) => setActivity({ ...activity, activity_type: e.target.value })}>
+              <select className="input" value={activity.activity_type} onChange={(e) => onActivityChange({ ...activity, activity_type: e.target.value })}>
                 {ACTIVITY_TYPES.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
               </select>
             </Field>
-            <Field label="İşlem Tarihi"><input type="datetime-local" className="input" value={activity.activity_date} onChange={(e) => setActivity({ ...activity, activity_date: e.target.value })} required /></Field>
-            <Field label="Görüşme / Aksiyon Notu"><textarea className="input" rows={4} value={activity.description} onChange={(e) => setActivity({ ...activity, description: e.target.value })} required /></Field>
-            <Field label="Sonraki Aksiyon Tarihi"><input type="date" className="input" value={activity.next_action_date} onChange={(e) => setActivity({ ...activity, next_action_date: e.target.value })} /></Field>
+            <Field label="İşlem Tarihi"><input type="datetime-local" className="input" value={activity.activity_date} onChange={(e) => onActivityChange({ ...activity, activity_date: e.target.value })} required /></Field>
+            <Field label="Görüşme / Aksiyon Notu"><textarea className="input" rows={4} value={activity.description} onChange={(e) => onActivityChange({ ...activity, description: e.target.value })} required /></Field>
+            <Field label="Sonraki Aksiyon Tarihi"><input type="date" className="input" value={activity.next_action_date} onChange={(e) => onActivityChange({ ...activity, next_action_date: e.target.value })} /></Field>
             <button type="submit" className="btn-primary w-full justify-center" disabled={busy}>Kaydı Ekle</button>
           </form>
         </div>
@@ -719,7 +1164,7 @@ export function LeadDetail() {
                   <div className="flex justify-between gap-3">
                     <div className="text-sm font-medium">{ACTIVITY_TYPES.find((a) => a.value === item.activity_type)?.label ?? (item.activity_type === 'status' ? 'Durum Güncellemesi' : 'Teklif')}</div>
                     {!['status', 'offer'].includes(item.activity_type) && (
-                      <button type="button" onClick={() => removeActivity(item.id)} className="text-ink-400 hover:text-red-600"><Trash2 size={14} /></button>
+                      <button type="button" onClick={() => onRemoveActivity(item.id)} className="text-ink-400 hover:text-red-600"><Trash2 size={14} /></button>
                     )}
                   </div>
                   <div className="text-xs text-ink-500 mt-1">{formatDateTime(item.activity_date)}{item.user_name ? ` - ${item.user_name}` : ''}</div>

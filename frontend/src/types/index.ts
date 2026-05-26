@@ -25,6 +25,13 @@ export interface Client {
   create_date?: string;
 }
 
+export interface LeadTag {
+  id: number;
+  name: string;
+  color: string;
+  usage_count?: number;
+}
+
 export interface LeadRow {
   id: number;
   company_name: string;
@@ -48,6 +55,7 @@ export interface LeadRow {
   offer_id: number | null;
   last_activity_date: string | null;
   activity_count: number;
+  tags?: LeadTag[];
 }
 
 export interface LeadActivity {
