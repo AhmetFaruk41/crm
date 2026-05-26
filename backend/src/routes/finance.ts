@@ -75,10 +75,11 @@ financeRouter.get('/', asyncHandler(async (req, res) => {
       SELECT CONCAT('billing-', b.id) AS row_id, NULL AS manual_id,
              'income' AS transaction_type, 'Proje Tahsilatı' AS category,
              CONCAT('#', p.offer_id, ' ', p.title) AS title,
-             b.pay AS amount, b.create_date AS transaction_date,
+             ROUND(b.pay * 100 / (100 + COALESCE(p.kdv, 0)), 2) AS amount,
+             b.create_date AS transaction_date,
              'Proje Ödemesi' AS payment_method,
              pp.title AS reference, c.title AS contact_name,
-             NULL AS notes, p.offer_id AS offer_id,
+             'KDV hariç net tutar' AS notes, p.offer_id AS offer_id,
              'project_payment' AS source, NULL AS user_name
       FROM projects_billings b
       JOIN projects p ON p.offer_id = b.offer_id

@@ -16,11 +16,18 @@ import type { DomainPricing, DomainRow } from '../types';
 
 const RENEWAL_SOON_DAYS = 30;
 
-function nextRenewalDate(createDate: string | null | undefined): Date | null {
-  if (!createDate) return null;
-  const normalized = createDate.includes(' ') ? createDate.replace(' ', 'T') : createDate;
-  const base = new Date(normalized.includes('T') ? normalized : normalized + 'T00:00:00');
-  if (isNaN(base.getTime())) return null;
+function parseDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const text = String(value).slice(0, 10);
+  const d = new Date(text + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function nextRenewalDate(row: { expires_at?: string | null; create_date?: string | null }): Date | null {
+  const explicit = parseDate(row.expires_at);
+  if (explicit) return explicit;
+  const base = parseDate(row.create_date);
+  if (!base) return null;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const next = new Date(base);
@@ -68,9 +75,10 @@ export function DomainsList() {
   }
 
   const enriched = useMemo(() => (rows ?? []).map((r) => {
-    const renewal = nextRenewalDate(r.create_date);
+    const renewal = nextRenewalDate(r);
     const days = renewal ? daysUntil(renewal) : null;
-    return { ...r, _renewal: renewal, _days: days };
+    const renewalSource: 'explicit' | 'anniversary' | 'none' = r.expires_at ? 'explicit' : (renewal ? 'anniversary' : 'none');
+    return { ...r, _renewal: renewal, _days: days, _renewalSource: renewalSource };
   }), [rows]);
 
   const summary = useMemo(() => {
@@ -129,10 +137,25 @@ export function DomainsList() {
         {r.full_price && <div className="text-xs text-ink-500">{r.full_price}$/yıl</div>}
       </div>
     ) },
+    { key: 'registrar', header: 'Sağlayıcı', render: (r) => (
+      <div>
+        <div>{r.registrar || <span className="text-ink-400">-</span>}</div>
+        {r.registrar_account && <div className="text-xs text-ink-500 break-all">{r.registrar_account}</div>}
+        {Number(r.auto_renew) === 1 && <span className="badge-success text-[10px] mt-1">Otomatik yenileme</span>}
+      </div>
+    ) },
     { key: 'create_date', header: 'Kurulum', sortValue: (r) => r.create_date, render: (r) => formatDate(r.create_date) },
     { key: '_renewal', header: 'Sonraki Yenileme', sortValue: (r) => r._renewal?.getTime() ?? Number.MAX_SAFE_INTEGER, render: (r) => (
       r.status === 1 && r._renewal
-        ? <div>{formatDate(r._renewal.toISOString().slice(0, 10))}{renewalBadge(r)}</div>
+        ? (
+          <div>
+            {formatDate(r._renewal.toISOString().slice(0, 10))}
+            {renewalBadge(r)}
+            {r._renewalSource === 'anniversary' && (
+              <div className="text-[10px] text-ink-400 mt-0.5">kurulumdan tahmini</div>
+            )}
+          </div>
+        )
         : <span className="text-ink-400">-</span>
     ) },
     { key: 'fullname', header: 'Yetkili', render: (r) => (
@@ -273,8 +296,13 @@ export function DomainForm() {
   const [d, setD] = useState<any>({
     name: '',
     create_date: new Date().toISOString().slice(0, 10),
+    expires_at: '',
     status: 1,
     subscription: 1,
+    registrar: '',
+    registrar_account: '',
+    auto_renew: 0,
+    notes: '',
     fullname: '',
     phone: '',
     email: '',
@@ -289,6 +317,11 @@ export function DomainForm() {
         setD({
           ...r.data,
           create_date: String(r.data.create_date).slice(0, 10),
+          expires_at: r.data.expires_at ? String(r.data.expires_at).slice(0, 10) : '',
+          registrar: r.data.registrar ?? '',
+          registrar_account: r.data.registrar_account ?? '',
+          auto_renew: Number(r.data.auto_renew ?? 0),
+          notes: r.data.notes ?? '',
         });
       }
       setLoading(false);
@@ -325,9 +358,14 @@ export function DomainForm() {
           <Field label="Domain Adı">
             <input className="input" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required disabled={editing} />
           </Field>
-          <Field label="Kurulum Tarihi">
-            <input type="date" className="input" value={d.create_date} onChange={(e) => setD({ ...d, create_date: e.target.value })} disabled={editing} />
-          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Kurulum Tarihi">
+              <input type="date" className="input" value={d.create_date} onChange={(e) => setD({ ...d, create_date: e.target.value })} disabled={editing} />
+            </Field>
+            <Field label="Bitiş Tarihi">
+              <input type="date" className="input" value={d.expires_at || ''} onChange={(e) => setD({ ...d, expires_at: e.target.value })} />
+            </Field>
+          </div>
           <Field label="Müşteri mi?">
             <select className="input" value={d.status} onChange={(e) => setD({ ...d, status: Number(e.target.value) })}>
               <option value={1}>Müşteri</option>
@@ -339,14 +377,63 @@ export function DomainForm() {
               {pricing.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.full_price}$/yıl)</option>)}
             </select>
           </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Sağlayıcı (Registrar)">
+              <input
+                className="input"
+                list="domain-registrars"
+                value={d.registrar || ''}
+                onChange={(e) => setD({ ...d, registrar: e.target.value })}
+                placeholder="Ör. NameCheap, GoDaddy, Natro"
+              />
+              <datalist id="domain-registrars">
+                <option value="NameCheap" />
+                <option value="GoDaddy" />
+                <option value="Natro" />
+                <option value="Hosting.com.tr" />
+                <option value="Turhost" />
+                <option value="İsim Tescil" />
+                <option value="Cloudflare" />
+              </datalist>
+            </Field>
+            <Field label="Sağlayıcı Hesabı / E-posta">
+              <input
+                className="input"
+                value={d.registrar_account || ''}
+                onChange={(e) => setD({ ...d, registrar_account: e.target.value })}
+                placeholder="Hesabın kayıtlı olduğu e-posta"
+              />
+            </Field>
+          </div>
+          <Field label="Otomatik Yenileme">
+            <label className="inline-flex items-center gap-2 text-sm text-ink-700">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={Number(d.auto_renew) === 1}
+                onChange={(e) => setD({ ...d, auto_renew: e.target.checked ? 1 : 0 })}
+              />
+              Sağlayıcı tarafında otomatik yenileme açık
+            </label>
+          </Field>
           <Field label="Yetkili Kişi">
             <input className="input" value={d.fullname || ''} onChange={(e) => setD({ ...d, fullname: e.target.value })} />
           </Field>
-          <Field label="Telefon">
-            <input className="input" value={d.phone || ''} onChange={(e) => setD({ ...d, phone: e.target.value })} />
-          </Field>
-          <Field label="E-Posta">
-            <input type="email" className="input" value={d.email || ''} onChange={(e) => setD({ ...d, email: e.target.value })} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Telefon">
+              <input className="input" value={d.phone || ''} onChange={(e) => setD({ ...d, phone: e.target.value })} />
+            </Field>
+            <Field label="E-Posta">
+              <input type="email" className="input" value={d.email || ''} onChange={(e) => setD({ ...d, email: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Notlar">
+            <textarea
+              className="input min-h-20"
+              value={d.notes || ''}
+              onChange={(e) => setD({ ...d, notes: e.target.value })}
+              placeholder="DNS ayarları, panel linki, özel notlar..."
+            />
           </Field>
           <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
             <Link to="/domains" className="btn-secondary order-2 sm:order-1 justify-center">İptal</Link>

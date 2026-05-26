@@ -200,7 +200,7 @@ export default function Finance() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-semibold">Hareket Dökümü</h3>
-                <p className="text-xs text-ink-500 mt-1">Proje ödemeleri otomatik gelir olarak dahil edilir.</p>
+                <p className="text-xs text-ink-500 mt-1">Proje ödemeleri KDV hariç net tutarla gelir olarak dahil edilir.</p>
               </div>
               <span className="text-xs text-ink-500">{data.summary.count} kayıt</span>
             </div>

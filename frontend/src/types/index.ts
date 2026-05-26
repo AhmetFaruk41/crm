@@ -165,7 +165,12 @@ export interface DomainRow {
   base_id: number;
   pay_status: number;
   create_date: string;
+  expires_at: string | null;
   subscription: number;
+  registrar: string | null;
+  registrar_account: string | null;
+  auto_renew: number;
+  notes: string | null;
   fullname: string;
   phone: string;
   email: string;
