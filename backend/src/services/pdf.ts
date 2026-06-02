@@ -19,6 +19,9 @@ const fonts = {
 const printer = new PdfPrinter(fonts);
 
 const BRAND = 'Umutcan Bozyiğit';
+const BANK_ACCOUNT_NAME = 'CAPELLA BRANDS DİJİTAL PAZARLAMA DANIŞMANLIĞI LİMİTED ŞİRKETİ';
+const BANK_NAME = 'İş Bankası';
+const BANK_IBAN_TRY = 'TR59 0006 4000 0012 2004 5608 37';
 
 const C = {
   ink: '#0f172a',
@@ -544,7 +547,7 @@ export async function generateAgreementPdf(input: AgreementPdfInput): Promise<Bu
 
       article(2, 'Sözleşmenin Konusu', {
         text:
-          'Bu sözleşmenin konusu, MÜŞTERİ tarafından YÜKLENİCİDEN talep edilen ve aşağıda detayları belirtilen hizmetlerin, sözleşmede yazılı süre ve şartlar dahilinde verilmesidir. Tarafların hak ve yükümlülükleri bu sözleşme ile düzenlenmiştir.',
+          'İşbu sözleşme MÜŞTERİ’nin iletişim, tanıtım, reklam ve benzeri hizmetleri yürütebilmek amacıyla ihtiyaç duyduğu web tasarımının YÜKLENİCİ tarafından hazırlanması hizmetini kapsamaktadır.',
       }),
 
       article(3, 'Hizmet Detayları ve Ücret', {
@@ -571,39 +574,69 @@ export async function generateAgreementPdf(input: AgreementPdfInput): Promise<Bu
         ],
       }),
 
-      article(4, 'Süre', {
+      article(4, 'Proje Yapı Şekli ve Süreci', {
         text: [
-          'Sözleşme ',
+          'YÜKLENİCİ, müşteriye sağlayacağı internet adresi aracılığıyla MÜŞTERİ’nin sitenin yapım aşamasını ve yapılan çalışmayı takip edebilmesini sağlayacaktır. Projenin yapım süreci minimum 30 iş günüdür. YÜKLENİCİ web sitesini belirtilen süre içerisinde daha erken teslim etme hakkına sahiptir. Sözleşme ',
           { text: dateformat3(agreement.start_date), bold: true, color: C.ink },
           ' tarihinde başlar ve ',
           { text: dateformat3(agreement.end_date), bold: true, color: C.ink },
-          ' tarihinde sona erer. Tarafların yazılı mutabakatı ile süre uzatılabilir.',
+          ' tarihinde sona erer.',
         ],
       }),
 
-      article(5, 'Ödeme Şartları', {
-        ul: [
-          'Ödemeler, taraflar arasında belirlenen plan doğrultusunda banka havalesi/EFT yoluyla yapılır.',
-          'Yapılan kısmi ödemeler için makbuz/fatura YÜKLENİCİ tarafından düzenlenir.',
-          'Ödeme yapılmaması durumunda YÜKLENİCİ hizmeti askıya alma hakkını saklı tutar.',
+      article(5, 'Ücretlendirme ve Ödeme', {
+        stack: [
+          { text: [
+            'Web sitesinin hazırlanması için belirli ücret önceden kararlaştırılmış olup gerekli tercümeler ve satın alınması gereken görseller hariç toplam ',
+            { text: trMoney(total), bold: true, color: C.ink },
+            ' olarak belirlenmiştir. MÜŞTERİ sözleşmeye konu olan ücretin %50’sini avans, kalan kısmını ise testler bittikten sonra aşağıdaki banka hesabına Havale/EFT yaparak gerçekleştirecektir.'
+          ], margin: [0, 0, 0, 8] },
+          { ul: [
+            'Banka Adı: ' + BANK_NAME,
+            'Hesap Adı: ' + BANK_ACCOUNT_NAME,
+            'TRY IBAN: ' + BANK_IBAN_TRY,
+            'Yapılan kısmi ödemeler için makbuz/fatura YÜKLENİCİ tarafından düzenlenir.',
+            'Ödeme yapılmaması durumunda YÜKLENİCİ hizmeti askıya alma hakkını saklı tutar.',
+          ] },
         ],
       }),
 
       article(6, 'Tarafların Yükümlülükleri', {
         stack: [
-          { text: ['• ', { text: 'YÜKLENİCİ', bold: true }, ' işin gerektirdiği özen, dikkat ve mesleki yetkinlikle hizmeti yerine getirir; teslim süresine uymakla yükümlüdür.'], margin: [0, 0, 0, 4] },
-          { text: ['• ', { text: 'MÜŞTERİ', bold: true }, ' hizmetin sağlanması için gereken bilgi, içerik, görsel ve onayları zamanında YÜKLENİCİYE ulaştırmakla yükümlüdür.'] },
+          { text: [{ text: 'MÜŞTERİ’nin Yükümlülükleri', bold: true, color: C.ink }], margin: [0, 0, 0, 4] },
+          { ul: [
+            'MÜŞTERİ, web tabanlı yazılımın yükleneceği sunucu/barındırma sistemini ve gerekli donanım/yazılım gereksinimlerini tedarik etmekle yükümlüdür. Barındırma ve alan adı tescili YÜKLENİCİ’den talep edilirse ek ücret sözleşme bedeline yansıtılır.',
+            'Web tasarımın düzenlenmesi ve tasarlanması aşamasında gerekli resim ve yazılı dokümanları zamanında, bilgisayar ortamında veya yüksek kalitede YÜKLENİCİ’ye iletmelidir.',
+            'MÜŞTERİ, YÜKLENİCİ tarafından üretilen yazılımlarda kullanılan özel yazılım tekniklerinin telif hakkının YÜKLENİCİ’ye ait olduğunu kabul eder.',
+            'MÜŞTERİ, kendisine ait tüm yedeklerin ve verilerin güvenliğinden sorumludur.',
+          ], margin: [0, 0, 0, 8] },
+          { text: [{ text: 'YÜKLENİCİ’nin Yükümlülükleri', bold: true, color: C.ink }], margin: [0, 0, 0, 4] },
+          { ul: [
+            'YÜKLENİCİ, MÜŞTERİ’nin tanıtım ve reklam için ihtiyaç duyduğu web sitesi/paneli hazırlamakla yükümlüdür.',
+            'MÜŞTERİ’ye sağlanmakta olan hizmetlerle ilgili oluşabilecek yazılımsal hataları ve sorunları 1 hafta içerisinde düzeltmekle yükümlüdür.',
+            'Mevcut bölümlerdeki basit değişiklikleri, komple tasarım/kod değişikliği gerektirmeyen düzeltmeleri ücret talep etmeden sisteme entegre eder.',
+            'Ek tasarım, komple tasarım/kod değişikliği, entegre online sistemler ve ilave modüller müşteriyle mutabık kalınacak ek ücretle yapılır.',
+            'Proje kaynak kodları, yönetim paneli bilgileri, geliştirilen ek modüller, kullanılan stok görseller ve ek kütüphaneler projenin sonlandırılması sonrasında dijital ortamda müşteriye iletilir.',
+          ] },
         ],
       }),
 
-      article(7, 'Gizlilik', {
-        text:
-          'Taraflar, iş bu sözleşmenin ifası sırasında öğrendikleri her türlü ticari, mali, teknik ve mesleki bilgiyi sözleşme süresince ve sözleşme sona erdikten sonra da süresiz olarak gizli tutmayı, üçüncü kişilerle paylaşmamayı kabul ve taahhüt eder.',
+      article(7, 'Gizlilik ve Güvenlik', {
+        stack: [
+          { text: 'Hem YÜKLENİCİ hem de MÜŞTERİ birbirlerinin gizlilik kurallarına saygı göstermelidir. Üçüncü şahıslar ile paylaşılması zorunlu olmayan ve diğer kişilerin ulaşımına açık olmayan tüm bilgiler gizli kabul edilip başka kişilerle paylaşılmamalıdır.', margin: [0, 0, 0, 6] },
+          { ul: [
+            'YÜKLENİCİ, FTP, veritabanı, yönetim paneli şifreleri ile site içeriğine ve veritabanına kayıtlı müşteri bilgilerini üçüncü kişi ve kuruluşlarla paylaşmayacağını ve kullandırmayacağını beyan eder.',
+            'MÜŞTERİ, kendi çalışanlarının kasıt, ihmal ya da kusurundan dolayı şifrelerin üçüncü kişi veya kuruluşların eline geçmesi halinde doğabilecek zararlardan YÜKLENİCİ’nin mesul olmadığını kabul eder.',
+          ] },
+        ],
       }),
 
-      article(8, 'Fesih ve Uyuşmazlık', {
-        text:
-          'Taraflardan birinin sözleşme yükümlülüklerine aykırı davranması ve yapılan yazılı bildirime rağmen 7 (yedi) gün içinde aykırılığı gidermemesi halinde diğer taraf sözleşmeyi tek taraflı feshedebilir. Sözleşmeden doğan uyuşmazlıklarda Türkiye Cumhuriyeti yasaları uygulanır ve İstanbul Mahkemeleri yetkilidir.',
+      article(8, 'Garanti', {
+        text: 'Web sitesinin testleri tamamlandıktan sonra çalışır durumda yayınlandığı tarihten itibaren garanti süresi 1 yıldır. YÜKLENİCİ, 1 yıllık garanti süresi içerisinde oluşabilecek yazılım veya tasarım hatalarının düzeltilmesi ya da sitenin çalışmaması durumunda müdahale edilip çalışır duruma getirilmesi için herhangi bir ücret talep etmeyecektir.',
+      }),
+
+      article(9, 'Elektronik Kayıtlar, Yetki ve Uyuşmazlık', {
+        text: 'Taraflar arasında yapılan e-posta, anlık mesaj ve faks gibi elektronik yazışma kayıtları kanunen geçerli delil kabul edilir. İşbu sözleşmenin uygulanmasından doğabilecek uyuşmazlıklarda Türkiye Cumhuriyeti yasaları uygulanır ve yetkili mahkemeler/ icra daireleri yetkilidir.',
       }),
 
       // signatures
