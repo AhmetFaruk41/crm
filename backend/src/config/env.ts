@@ -10,4 +10,7 @@ export const env = {
   COOKIE_NAME: process.env.COOKIE_NAME ?? 'noname_token',
   NODE_ENV: process.env.NODE_ENV ?? 'development',
   FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+  // CAWELT sitesine içerik tazeleme webhook'u (boşsa devre dışı).
+  SITE_REVALIDATE_URL: process.env.SITE_REVALIDATE_URL ?? '',
+  SITE_REVALIDATE_SECRET: process.env.SITE_REVALIDATE_SECRET ?? '',
 };

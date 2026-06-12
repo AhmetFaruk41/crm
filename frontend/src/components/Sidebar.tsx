@@ -11,6 +11,7 @@ import {
   Building2,
   Wallet,
   UserRoundSearch,
+  Newspaper,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -48,6 +49,12 @@ const groups: NavGroup[] = [
     items: [
       { to: '/projects', label: 'Projeler', icon: Briefcase },
       { to: '/domains', label: 'Domainler', icon: Globe },
+    ],
+  },
+  {
+    label: 'İçerik',
+    items: [
+      { to: '/blog', label: 'Blog', icon: Newspaper },
     ],
   },
   {

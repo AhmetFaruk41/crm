@@ -20,6 +20,7 @@ import { dashboardRouter } from './routes/dashboard.js';
 import { pdfRouter } from './routes/pdf.js';
 import { financeRouter } from './routes/finance.js';
 import { leadsRouter } from './routes/leads.js';
+import { blogAdminRouter, publicBlogRouter } from './routes/blog.js';
 
 const app = express();
 app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));
@@ -33,6 +34,10 @@ app.use('/uploads', express.static(path.resolve('uploads')));
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 app.use('/api/auth', authRouter);
+
+// Public blog API — CAWELT sitesi sunucu-sunucuya bundan okur (yetki yok,
+// yalnızca yayınlanan yazılar). Auth duvarından ÖNCE mount edilir.
+app.use('/api/public/blog', publicBlogRouter);
 
 // All other routes require auth
 app.get('/api/resources/web-sitesi-proje-bilgi-formu', requireAuth, (_req, res) => {
@@ -54,6 +59,7 @@ app.use('/api/domains', requireAuth, domainsRouter);
 app.use('/api/dashboard', requireAuth, dashboardRouter);
 app.use('/api/finance', requireAuth, financeRouter);
 app.use('/api/leads', requireAuth, leadsRouter);
+app.use('/api/blog', requireAuth, blogAdminRouter);
 app.use('/api/pdf', requireAuth, pdfRouter);
 
 app.use(notFound);
