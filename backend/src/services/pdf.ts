@@ -1,4 +1,4 @@
-// PDF üretimi - Umutcan Bozyiğit · neutral grayscale
+// PDF üretimi - Cawelt Studio · neutral grayscale (sözleşmelerde yasal isim kullanılır)
 import PdfPrinter from 'pdfmake';
 import type { TDocumentDefinitions, Content, ContentStack } from 'pdfmake/interfaces';
 import path from 'node:path';
@@ -18,7 +18,9 @@ const fonts = {
 };
 const printer = new PdfPrinter(fonts);
 
-const BRAND = 'Umutcan Bozyiğit';
+const BRAND = 'Cawelt Studio';
+// Sözleşmelerde yasal taraf (YÜKLENİCİ) gerçek kişi adıyla kalır.
+const LEGAL_NAME = 'Umutcan Bozyiğit';
 const BANK_ACCOUNT_NAME = 'CAPELLA BRANDS DİJİTAL PAZARLAMA DANIŞMANLIĞI LİMİTED ŞİRKETİ';
 const BANK_NAME = 'İş Bankası';
 const BANK_IBAN_TRY = 'TR59 0006 4000 0012 2004 5608 37';
@@ -54,15 +56,15 @@ const stripHtml = (s: string | null | undefined) => {
 
 // ----- shared building blocks -----
 
-const headerBlock = (rightLabel: string): Content => ({
+const headerBlock = (rightLabel: string, brand: string = BRAND): Content => ({
   margin: [50, 28, 50, 0],
   columns: [
-    { text: BRAND, fontSize: 14, bold: true, color: C.ink },
+    { text: brand, fontSize: 14, bold: true, color: C.ink },
     { text: rightLabel, alignment: 'right', fontSize: 10, color: C.muted, margin: [0, 4, 0, 0] },
   ],
 });
 
-const footerBlock = (currentPage: number, pageCount: number): Content => ({
+const footerBlock = (currentPage: number, pageCount: number, brand: string = BRAND): Content => ({
   margin: [50, 0, 50, 24],
   columns: [
     {
@@ -70,7 +72,7 @@ const footerBlock = (currentPage: number, pageCount: number): Content => ({
         { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 0.5, lineColor: C.line }] },
         {
           columns: [
-            { text: BRAND, fontSize: 8, color: C.faint, margin: [0, 8, 0, 0] },
+            { text: brand, fontSize: 8, color: C.faint, margin: [0, 8, 0, 0] },
             { text: `${currentPage} / ${pageCount}`, alignment: 'right', fontSize: 8, color: C.faint, margin: [0, 8, 0, 0] },
           ],
         },
@@ -486,12 +488,12 @@ export async function generateAgreementPdf(input: AgreementPdfInput): Promise<Bu
   });
 
   const docDef: TDocumentDefinitions = {
-    info: { title: `Sözleşme #${agreement.offer_id}`, author: BRAND },
+    info: { title: `Sözleşme #${agreement.offer_id}`, author: LEGAL_NAME },
     pageSize: 'A4',
     pageMargins: [50, 70, 50, 60],
     defaultStyle: { font: 'Roboto', fontSize: 10, color: C.text, lineHeight: 1.35 },
-    header: () => headerBlock(`Sözleşme No · #${agreement.offer_id}`),
-    footer: (cp, pc) => footerBlock(cp, pc),
+    header: () => headerBlock(`Sözleşme No · #${agreement.offer_id}`, LEGAL_NAME),
+    footer: (cp, pc) => footerBlock(cp, pc, LEGAL_NAME),
     content: [
       // ---- Top
       { text: 'HİZMET SÖZLEŞMESİ', fontSize: 9, bold: true, color: C.muted, characterSpacing: 2 },
@@ -508,7 +510,7 @@ export async function generateAgreementPdf(input: AgreementPdfInput): Promise<Bu
       sectionHeading('Taraflar'),
       {
         columns: [
-          { width: '*', stack: [partyBlock('YÜKLENİCİ', BRAND)] },
+          { width: '*', stack: [partyBlock('YÜKLENİCİ', LEGAL_NAME)] },
           { width: 1, canvas: [{ type: 'line', x1: 0, y1: 0, x2: 0, y2: 50, lineWidth: 0.5, lineColor: C.line }] },
           { width: '*', stack: [partyBlock('MÜŞTERİ', client?.title ?? '-', client?.fullname ?? undefined)], margin: [16, 0, 0, 0] },
         ],
@@ -533,7 +535,7 @@ export async function generateAgreementPdf(input: AgreementPdfInput): Promise<Bu
           'İş bu sözleşme ',
           { text: dateformat3(agreement.start_date), bold: true, color: C.ink },
           ' tarihinde, hizmeti üretip teslim eden ',
-          { text: BRAND, bold: true, color: C.ink },
+          { text: LEGAL_NAME, bold: true, color: C.ink },
           ' (bundan sonra ',
           { text: 'YÜKLENİCİ', bold: true },
           ' olarak anılacaktır) ile, hizmeti satın alan ',
@@ -651,7 +653,7 @@ export async function generateAgreementPdf(input: AgreementPdfInput): Promise<Bu
                 width: '*',
                 stack: [
                   { text: 'YÜKLENİCİ', fontSize: 9, color: C.muted, characterSpacing: 1.5, bold: true, margin: [0, 0, 0, 6] },
-                  { text: BRAND, fontSize: 11, bold: true, color: C.ink, margin: [0, 0, 0, 28] },
+                  { text: LEGAL_NAME, fontSize: 11, bold: true, color: C.ink, margin: [0, 0, 0, 28] },
                   { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5, lineColor: C.rule }] },
                   { text: 'Kaşe / İmza', fontSize: 9, color: C.muted, margin: [0, 4, 0, 0] },
                 ],
