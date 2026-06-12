@@ -13,4 +13,7 @@ export const env = {
   // CAWELT sitesine içerik tazeleme webhook'u (boşsa devre dışı).
   SITE_REVALIDATE_URL: process.env.SITE_REVALIDATE_URL ?? '',
   SITE_REVALIDATE_SECRET: process.env.SITE_REVALIDATE_SECRET ?? '',
+  // Yüklenen görseller için mutlak URL üretiminde kullanılan CRM public origin'i
+  // (örn. https://crm.cawelt.com). Boşsa istek başlığından türetilir.
+  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL ?? '',
 };

@@ -1,9 +1,14 @@
 import { Router } from 'express';
+import multer from 'multer';
+import path from 'node:path';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { execute, query, queryOne } from '../db/pool.js';
 import { HttpError } from '../middleware/error.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { markdownToBlocks } from '../utils/markdown.js';
 import { triggerSiteRevalidate } from '../services/revalidate.js';
+import { env } from '../config/env.js';
 
 // ---------------------------------------------------------------------------
 // Yardımcılar
@@ -103,6 +108,35 @@ function toAdmin(row: any) {
 const LIST_COLS =
   'id, slug, title, description, category, tags, author, cover, status, published_at, created_at, updated_at';
 
+// --- Kapak görseli yükleme (multer → uploads/blog) ---
+const COVER_DIR = path.resolve('uploads/blog');
+fs.mkdirSync(COVER_DIR, { recursive: true });
+
+const COVER_MIMES = new Set([
+  'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/avif',
+]);
+
+const coverUpload = multer({
+  storage: multer.diskStorage({
+    destination: COVER_DIR,
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || '').toLowerCase().slice(0, 6);
+      cb(null, crypto.randomBytes(16).toString('hex') + ext);
+    },
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (COVER_MIMES.has(file.mimetype)) cb(null, true);
+    else cb(new Error('Sadece PNG, JPG, WEBP, GIF, AVIF kabul edilir'));
+  },
+});
+
+/** Yüklenen dosya için site'ın gömebileceği mutlak URL üretir. */
+function publicUrl(req: { protocol: string; get(h: string): string | undefined }, filename: string): string {
+  const base = env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host') ?? ''}`;
+  return `${base.replace(/\/$/, '')}/uploads/blog/${filename}`;
+}
+
 // ---------------------------------------------------------------------------
 // PUBLIC — siteye servis (yetki gerektirmez, yalnızca yayınlananlar)
 // ---------------------------------------------------------------------------
@@ -132,6 +166,12 @@ publicBlogRouter.get('/posts/:slug', asyncHandler(async (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const blogAdminRouter = Router();
+
+// Kapak görseli yükle → { url } (mutlak, site gömebilir)
+blogAdminRouter.post('/upload', coverUpload.single('image'), asyncHandler(async (req, res) => {
+  if (!req.file) throw new HttpError(400, 'Dosya gelmedi');
+  res.json({ url: publicUrl(req, req.file.filename), filename: req.file.filename });
+}));
 
 blogAdminRouter.get('/posts', asyncHandler(async (_req, res) => {
   const rows = await query(

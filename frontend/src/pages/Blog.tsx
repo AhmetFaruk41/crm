@@ -1,14 +1,38 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, ExternalLink, Megaphone } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MDEditor, { commands, type ICommand } from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
 import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
 import { Field } from '../components/Field';
+import CoverUploader from '../components/CoverUploader';
 import { formatDate, todayISO } from '../lib/format';
+
+// Siteye özel "callout" (vurgu kutusu) bloğu için tek-tık komut.
+const calloutCommand: ICommand = {
+  name: 'callout',
+  keyCommand: 'callout',
+  buttonProps: { 'aria-label': 'Vurgu kutusu', title: 'Vurgu kutusu (callout)' },
+  icon: <Megaphone size={12} />,
+  execute: (state: any, apiCmd: any) => {
+    const text = state.selectedText || 'Vurgulanan önemli not.';
+    apiCmd.replaceSelection(`\n:::callout\n${text}\n:::\n`);
+  },
+};
+
+// İçerik editörünün araç çubuğu — sitedeki tasarımlı blokların hepsi tek tıkla.
+const editorCommands: ICommand[] = [
+  commands.bold, commands.italic, commands.strikethrough, commands.divider,
+  commands.heading2, commands.heading3, commands.divider,
+  commands.link, commands.quote, calloutCommand, commands.code, commands.codeBlock, commands.divider,
+  commands.unorderedListCommand, commands.orderedListCommand, commands.divider,
+  commands.image,
+];
 
 interface FaqItem { q: string; a: string }
 
@@ -228,19 +252,29 @@ export function BlogForm() {
             </Field>
           </div>
 
-          <Field label="Kapak görseli yolu (opsiyonel)">
-            <input className="input" value={d.cover} onChange={(e) => setD({ ...d, cover: e.target.value })} placeholder="/blog/kapak.jpg" />
+          <Field label="Kapak görseli (opsiyonel)">
+            <CoverUploader value={d.cover} onChange={(url) => setD({ ...d, cover: url })} />
           </Field>
 
-          <Field label="İçerik (Markdown)">
-            <textarea
-              className="input min-h-[360px] font-mono text-sm leading-relaxed"
-              value={d.body_markdown}
-              onChange={(e) => setD({ ...d, body_markdown: e.target.value })}
-              placeholder={'İlk paragraf otomatik olarak "giriş" stiline alınır.\n\n## Başlık\nMetin... **kalın**, *italik*, [link](/iletisim).\n\n- madde\n- madde\n\n> Alıntı\n> — Kaynak\n\n:::callout\nVurgulanan not.\n:::\n\n```js\nkod();\n```'}
-            />
-            <p className="mt-1 text-xs text-ink-500">
-              Desteklenen: ## / ### başlık, - veya 1. liste, &gt; alıntı, :::callout ... :::, ``` kod ```, **kalın**, *italik*, [metin](url). Kaydederken otomatik bloklara dönüştürülür.
+          <Field label="İçerik">
+            <div data-color-mode="light" className="rounded-md border border-ink-200 overflow-hidden">
+              <MDEditor
+                value={d.body_markdown}
+                onChange={(v) => setD({ ...d, body_markdown: v ?? '' })}
+                height={460}
+                preview="edit"
+                commands={editorCommands}
+                textareaProps={{
+                  placeholder:
+                    'İlk paragraf otomatik olarak "giriş" (lead) stiline alınır.\n\nÜstteki araç çubuğuyla başlık, liste, alıntı, vurgu kutusu (📣) ve kod ekleyebilirsin.',
+                }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-ink-500">
+              Araç çubuğundaki butonlar sitedeki tasarımlı blokları üretir: <b>H2/H3</b> başlık,
+              liste, <b>alıntı</b> (alt satıra <code>— Kaynak</code> yazarsan kaynak olur),
+              <b> 📣 vurgu kutusu</b>, kod. Sağ üstten önizleme/tam ekran açabilirsin.
+              İlk paragraf otomatik <b>giriş</b> stiline geçer.
             </p>
           </Field>
 

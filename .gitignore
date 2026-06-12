@@ -28,6 +28,8 @@ Thumbs.db
 # Uploads (kullanıcı tarafından yüklenen dosyalar repo'da olmaz)
 backend/uploads/clients/*
 !backend/uploads/clients/.gitkeep
+backend/uploads/blog/*
+!backend/uploads/blog/.gitkeep
 
 # TypeScript cache
 *.tsbuildinfo
