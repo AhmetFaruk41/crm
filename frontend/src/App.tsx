@@ -19,6 +19,7 @@ import { DomainsList, DomainForm } from './pages/Domains';
 import Finance from './pages/Finance';
 import { LeadsList, LeadDetailModal, LeadForm } from './pages/Leads';
 import { BlogList, BlogForm } from './pages/Blog';
+import Drive from './pages/Drive';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -95,6 +96,8 @@ export default function App() {
           <Route path="domains" element={<DomainsList />} />
           <Route path="domains/new" element={<DomainForm />} />
           <Route path="domains/:id/edit" element={<DomainForm />} />
+
+          <Route path="drive" element={<Drive />} />
 
           <Route path="blog" element={<BlogList />} />
           <Route path="blog/new" element={<BlogForm />} />

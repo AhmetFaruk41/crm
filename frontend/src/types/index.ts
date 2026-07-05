@@ -32,6 +32,39 @@ export interface LeadTag {
   usage_count?: number;
 }
 
+export interface DriveTag {
+  id: number;
+  name: string;
+  color: string;
+  usageCount?: number;
+}
+
+export interface DriveFolder {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  folderCount?: number;
+  fileCount?: number;
+}
+
+export interface DriveFile {
+  id: number;
+  folder_id: number | null;
+  original_name: string;
+  mime: string | null;
+  size: number;
+  create_date: string;
+  tags: DriveTag[];
+}
+
+export interface DriveListing {
+  folder: DriveFolder | null;
+  breadcrumb: { id: number; name: string }[];
+  folders: DriveFolder[];
+  files: DriveFile[];
+  search: boolean;
+}
+
 export interface LeadRow {
   id: number;
   company_name: string;

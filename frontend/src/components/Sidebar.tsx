@@ -13,6 +13,7 @@ import {
   Wallet,
   UserRoundSearch,
   Newspaper,
+  HardDrive,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -56,6 +57,7 @@ const groups: NavGroup[] = [
   {
     label: 'İçerik',
     items: [
+      { to: '/drive', label: 'Drive', icon: HardDrive },
       { to: '/blog', label: 'Blog', icon: Newspaper },
     ],
   },
