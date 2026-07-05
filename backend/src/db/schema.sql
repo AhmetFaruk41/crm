@@ -146,8 +146,8 @@ CREATE TABLE offers_matters (
   matter_description TEXT NOT NULL,
   matter_extra TEXT,
   matter_unit INT(11) NOT NULL DEFAULT 1,
-  matter_old_price FLOAT DEFAULT NULL,
-  matter_price FLOAT NOT NULL,
+  matter_old_price DECIMAL(12,2) DEFAULT NULL,
+  matter_price DECIMAL(12,2) NOT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX (offer_id),
   CONSTRAINT fk_offers_matters_offer FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE
@@ -356,8 +356,8 @@ CREATE TABLE offer_template_matters (
   matter_description TEXT NOT NULL,
   matter_extra TEXT,
   matter_unit INT(11) NOT NULL DEFAULT 1,
-  matter_old_price FLOAT DEFAULT NULL,
-  matter_price FLOAT NOT NULL DEFAULT 0,
+  matter_old_price DECIMAL(12,2) DEFAULT NULL,
+  matter_price DECIMAL(12,2) NOT NULL DEFAULT 0,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX (template_id),
   CONSTRAINT fk_otm_template FOREIGN KEY (template_id) REFERENCES offer_templates(id) ON DELETE CASCADE
@@ -367,9 +367,9 @@ DROP TABLE IF EXISTS domain_pricing;
 CREATE TABLE domain_pricing (
   id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
-  monthly_price FLOAT NOT NULL DEFAULT 0,
-  full_price FLOAT NOT NULL DEFAULT 0,
-  kdv FLOAT NOT NULL DEFAULT 20
+  monthly_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  full_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  kdv DECIMAL(5,2) NOT NULL DEFAULT 20
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;
