@@ -22,6 +22,7 @@ import { pdfRouter } from './routes/pdf.js';
 import { financeRouter } from './routes/finance.js';
 import { leadsRouter } from './routes/leads.js';
 import { blogAdminRouter, publicBlogRouter } from './routes/blog.js';
+import { driveRouter } from './routes/drive.js';
 
 const app = express();
 // Ters proxy (nginx) arkasında doğru istemci IP'si ve secure cookie tespiti için.
@@ -76,6 +77,7 @@ app.use('/api/dashboard', requireAuth, dashboardRouter);
 app.use('/api/finance', requireAuth, financeRouter);
 app.use('/api/leads', requireAuth, leadsRouter);
 app.use('/api/blog', requireAuth, blogAdminRouter);
+app.use('/api/drive', requireAuth, driveRouter);
 app.use('/api/pdf', requireAuth, pdfRouter);
 
 app.use(notFound);
