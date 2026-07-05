@@ -27,6 +27,14 @@ function Protected({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminOnly({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.level !== 1) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function PublicOnly({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
@@ -80,9 +88,9 @@ export default function App() {
           <Route path="personnel/new" element={<PersonnelForm />} />
           <Route path="personnel/:id/edit" element={<PersonnelForm />} />
 
-          <Route path="users" element={<UsersList />} />
-          <Route path="users/new" element={<UserForm />} />
-          <Route path="users/:id/edit" element={<UserForm />} />
+          <Route path="users" element={<AdminOnly><UsersList /></AdminOnly>} />
+          <Route path="users/new" element={<AdminOnly><UserForm /></AdminOnly>} />
+          <Route path="users/:id/edit" element={<AdminOnly><UserForm /></AdminOnly>} />
 
           <Route path="domains" element={<DomainsList />} />
           <Route path="domains/new" element={<DomainForm />} />
