@@ -28,8 +28,18 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Static for client logos
-app.use('/uploads', express.static(path.resolve('uploads')));
+// Static for client logos / blog covers. nosniff + restrictive CSP: yüklenen
+// bir dosya beklenmedik bir tipe (ör. HTML) sniff'lenip aynı origin'de script
+// çalıştıramasın diye. Yükleme filtresi zaten SVG/HTML'i reddediyor.
+app.use(
+  '/uploads',
+  express.static(path.resolve('uploads'), {
+    setHeaders: (res) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    },
+  })
+);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
