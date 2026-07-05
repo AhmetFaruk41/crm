@@ -32,6 +32,7 @@ mysql -u root -p noname_crm < backend/src/db/migrations/004_sales_leads_pipeline
 mysql -u root -p noname_crm < backend/src/db/migrations/007_blog_posts.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/008_foreign_keys_and_indexes.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/009_money_decimal.sql
+mysql -u root -p noname_crm < backend/src/db/migrations/010_drive.sql
 ```
 
 > `008` foreign key ve eksik index ekler; canlıda çalıştırmadan önce dosya
