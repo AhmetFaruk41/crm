@@ -5,6 +5,7 @@ import path from 'node:path';
 import { env } from './config/env.js';
 import { errorHandler, notFound } from './middleware/error.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
+import { securityHeaders, rateLimit } from './middleware/security.js';
 
 import { authRouter } from './routes/auth.js';
 import { usersRouter } from './routes/users.js';
@@ -23,6 +24,9 @@ import { leadsRouter } from './routes/leads.js';
 import { blogAdminRouter, publicBlogRouter } from './routes/blog.js';
 
 const app = express();
+// Ters proxy (nginx) arkasında doğru istemci IP'si ve secure cookie tespiti için.
+if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
+app.use(securityHeaders);
 app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -43,6 +47,8 @@ app.use(
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+// Brute-force koruması: giriş denemelerini IP başına sınırla.
+app.use('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));
 app.use('/api/auth', authRouter);
 
 // Public blog API — CAWELT sitesi sunucu-sunucuya bundan okur (yetki yok,
