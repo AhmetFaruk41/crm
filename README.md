@@ -47,7 +47,7 @@ Geliştirme yol haritası ve tamamlanan adımlar:
 cd backend
 npm install
 # .env içindeki DB_PASS'ı kendi MySQL şifrenle güncelle
-npm run seed:admin   # admin / admin123 kullanıcısını oluşturur
+ADMIN_PASSWORD=cok-guclu-bir-sifre npm run seed:admin   # 'admin' yöneticisini oluşturur
 npm run dev          # http://localhost:4000
 ```
 
