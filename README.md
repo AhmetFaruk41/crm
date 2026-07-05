@@ -30,7 +30,13 @@ mysql -u root -p noname_crm < backend/src/db/migrations/002_project_workflow_and
 mysql -u root -p noname_crm < backend/src/db/migrations/003_finance_transactions.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/004_sales_leads_pipeline.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/007_blog_posts.sql
+mysql -u root -p noname_crm < backend/src/db/migrations/008_foreign_keys_and_indexes.sql
+mysql -u root -p noname_crm < backend/src/db/migrations/009_money_decimal.sql
 ```
+
+> `008` foreign key ve eksik index ekler; canlıda çalıştırmadan önce dosya
+> başındaki öksüz-kayıt kontrol sorgularını koştur. `009` para alanlarını
+> FLOAT'tan DECIMAL'e çevirir.
 
 Canlı veritabanı migration ve aday içe aktarma güvenlik adımları:
 [`docs/production-data-safety.md`](docs/production-data-safety.md).
