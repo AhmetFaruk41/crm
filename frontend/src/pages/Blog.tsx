@@ -9,6 +9,8 @@ import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
+import { useList } from '../hooks/useList';
 import { Field } from '../components/Field';
 import CoverUploader from '../components/CoverUploader';
 import { formatDate, todayISO } from '../lib/format';
@@ -72,19 +74,13 @@ function slugify(input: string): string {
 // ---------------------------------------------------------------------------
 
 export function BlogList() {
-  const [rows, setRows] = useState<BlogRow[] | null>(null);
-
-  async function load() {
-    const r = await api.get<BlogRow[]>('/blog/posts');
-    setRows(r.data);
-  }
-  useEffect(() => { load(); }, []);
+  const { data: rows, loading, error, reload } = useList<BlogRow[]>('/blog/posts');
 
   async function del(id: number) {
     if (!await confirm({ message: 'Yazı silinsin mi? Sitedeki sayfası da kaldırılır.', danger: true, confirmLabel: 'Sil' })) return;
     await api.delete(`/blog/posts/${id}`);
     toast.success('Silindi');
-    load();
+    reload();
   }
 
   const cols: Column<BlogRow>[] = [
@@ -119,7 +115,8 @@ export function BlogList() {
     },
   ];
 
-  if (!rows) return <Loading />;
+  if (loading) return <Loading />;
+  if (error || !rows) return <ErrorState onRetry={reload} />;
 
   return (
     <div>

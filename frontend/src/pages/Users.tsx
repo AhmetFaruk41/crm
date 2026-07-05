@@ -7,6 +7,8 @@ import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
+import { useList } from '../hooks/useList';
 import { Field } from '../components/Field';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,19 +23,13 @@ interface UserRow {
 
 export function UsersList() {
   const { user: me } = useAuth();
-  const [rows, setRows] = useState<UserRow[] | null>(null);
-
-  async function load() {
-    const r = await api.get<UserRow[]>('/users');
-    setRows(r.data);
-  }
-  useEffect(() => { load(); }, []);
+  const { data: rows, loading, error, reload } = useList<UserRow[]>('/users');
 
   async function del(id: number) {
     if (!await confirm({ message: 'Kullanıcı silinsin mi?', danger: true, confirmLabel: 'Sil' })) return;
     await api.delete(`/users/${id}`);
     toast.success('Silindi');
-    load();
+    reload();
   }
 
   const cols: Column<UserRow>[] = [
@@ -59,7 +55,8 @@ export function UsersList() {
     ) },
   ];
 
-  if (!rows) return <Loading />;
+  if (loading) return <Loading />;
+  if (error || !rows) return <ErrorState onRetry={reload} />;
   return (
     <div>
       <PageHeader

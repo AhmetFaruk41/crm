@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, FileText, ScrollText, Briefcase, TrendingUp, TrendingDown, AlertCircle, FileDown, UserRoundSearch, Flame, CalendarClock } from 'lucide-react';
-import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
+import { useList } from '../hooks/useList';
 import { formatDate, formatMoney, todayISO } from '../lib/format';
 
 interface Stats {
@@ -30,13 +30,10 @@ const PIPELINE_LABELS: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const { data: stats, loading, error, reload } = useList<Stats>('/dashboard/stats');
 
-  useEffect(() => {
-    api.get<Stats>('/dashboard/stats').then((r) => setStats(r.data));
-  }, []);
-
-  if (!stats) return <Loading />;
+  if (loading) return <Loading />;
+  if (error || !stats) return <ErrorState onRetry={reload} />;
 
   const cards = [
     { label: 'Aktif Aday', value: stats.counts.leadCount, icon: UserRoundSearch, link: '/leads' },

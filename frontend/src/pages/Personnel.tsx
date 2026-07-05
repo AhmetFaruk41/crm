@@ -7,23 +7,19 @@ import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
+import { useList } from '../hooks/useList';
 import { Field } from '../components/Field';
 import type { Personel } from '../types';
 
 export function PersonnelList() {
-  const [rows, setRows] = useState<Personel[] | null>(null);
-
-  async function load() {
-    const r = await api.get<Personel[]>('/personnel');
-    setRows(r.data);
-  }
-  useEffect(() => { load(); }, []);
+  const { data: rows, loading, error, reload } = useList<Personel[]>('/personnel');
 
   async function del(id: number) {
     if (!await confirm({ message: 'Personel silinsin mi?', danger: true, confirmLabel: 'Sil' })) return;
     await api.delete(`/personnel/${id}`);
     toast.success('Silindi');
-    load();
+    reload();
   }
 
   const cols: Column<Personel>[] = [
@@ -39,7 +35,8 @@ export function PersonnelList() {
     ) },
   ];
 
-  if (!rows) return <Loading />;
+  if (loading) return <Loading />;
+  if (error || !rows) return <ErrorState onRetry={reload} />;
   return (
     <div>
       <PageHeader
