@@ -7,7 +7,7 @@ import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { Field, FieldRow } from '../components/Field';
 import Loading from '../components/Loading';
-import { confirm } from '../components/ConfirmDialog';
+import { confirm, promptText } from '../components/ConfirmDialog';
 import { formatDate, formatDateTime, formatMoney, todayISO } from '../lib/format';
 import type { LeadActivity, LeadOffer, LeadRow, LeadTag } from '../types';
 
@@ -356,9 +356,14 @@ export function LeadsList() {
     if (nextStage === lead.stage) return;
     let lostReason: string | undefined;
     if (nextStage === 'lost') {
-      const reason = window.prompt('Bu fırsat neden kaybedildi?');
-      if (!reason?.trim()) return;
-      lostReason = reason.trim();
+      const reason = await promptText({
+        title: 'Kayıp nedeni',
+        message: 'Bu fırsat neden kaybedildi?',
+        confirmLabel: 'Kaydet',
+        input: { placeholder: 'Örn. bütçe yetersiz, rakibe gitti…', required: true },
+      });
+      if (!reason) return;
+      lostReason = reason;
     }
     await api.put(`/leads/${lead.id}/stage`, { stage: nextStage, lost_reason: lostReason });
     setRows((current) => current?.map((row) => row.id === lead.id

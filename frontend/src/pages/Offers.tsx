@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
 import { Field } from '../components/Field';
 import { addDaysISO, formatDate, formatMoney, todayISO, truncate } from '../lib/format';
 import type { Client, Job, OfferMatter, OfferRow, OfferTemplateRow } from '../types';
@@ -21,11 +22,17 @@ const STATUS = [
 export function OffersList() {
   const [rows, setRows] = useState<OfferRow[] | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [error, setError] = useState(false);
 
   async function load() {
-    const [r, j] = await Promise.all([api.get<OfferRow[]>('/offers'), api.get<Job[]>('/jobs')]);
-    setRows(r.data);
-    setJobs(j.data);
+    setError(false);
+    try {
+      const [r, j] = await Promise.all([api.get<OfferRow[]>('/offers'), api.get<Job[]>('/jobs')]);
+      setRows(r.data);
+      setJobs(j.data);
+    } catch {
+      setError(true);
+    }
   }
   useEffect(() => { load(); }, []);
 
@@ -85,6 +92,7 @@ export function OffersList() {
     ) },
   ];
 
+  if (error) return <ErrorState onRetry={() => { setError(false); load(); }} />;
   if (!rows) return <Loading />;
   return (
     <div>

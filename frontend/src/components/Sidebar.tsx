@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard,
   FileText,
@@ -11,7 +12,7 @@ import {
   Building2,
   Wallet,
   UserRoundSearch,
-  Newspaper,
+  HardDrive,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ interface NavItem {
   label: string;
   icon: LucideIcon;
   end?: boolean;
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
@@ -54,7 +56,7 @@ const groups: NavGroup[] = [
   {
     label: 'İçerik',
     items: [
-      { to: '/blog', label: 'Blog', icon: Newspaper },
+      { to: '/drive', label: 'Drive', icon: HardDrive },
     ],
   },
   {
@@ -68,7 +70,7 @@ const groups: NavGroup[] = [
     items: [
       { to: '/clients', label: 'Müşteriler', icon: Building2 },
       { to: '/personnel', label: 'Personel', icon: UserCog },
-      { to: '/users', label: 'Kullanıcılar', icon: UsersIcon },
+      { to: '/users', label: 'Kullanıcılar', icon: UsersIcon, adminOnly: true },
     ],
   },
 ];
@@ -79,6 +81,14 @@ interface Props {
 }
 
 export default function Sidebar({ open, onClose }: Props) {
+  const { user } = useAuth();
+  const isAdmin = user?.level === 1;
+
+  // adminOnly öğeleri admin olmayanlardan gizle; öğesi kalmayan grupları at.
+  const visibleGroups = groups
+    .map((g) => ({ ...g, items: g.items.filter((it) => !it.adminOnly || isAdmin) }))
+    .filter((g) => g.items.length > 0);
+
   return (
     <>
       {open && (
@@ -108,7 +118,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto py-3">
-          {groups.map((group, idx) => (
+          {visibleGroups.map((group, idx) => (
             <div key={group.label ?? `g-${idx}`} className={idx > 0 ? 'mt-3 pt-3 border-t border-ink-800' : ''}>
               {group.label && (
                 <div className="px-6 mb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-500">

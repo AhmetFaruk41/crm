@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { env } from '../config/env.js';
 
 export class HttpError extends Error {
   status: number;
@@ -14,7 +15,14 @@ export function notFound(_req: Request, res: Response) {
 
 export function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
   const status = err?.status ?? 500;
-  const message = err?.message ?? 'Internal server error';
   if (status >= 500) console.error('[error]', err);
+  // 5xx hatalarında iç detayı (stack/SQL mesajı vb.) istemciye sızdırma;
+  // yalnızca bilinçli HttpError (4xx) mesajları kullanıcıya gösterilir.
+  const message =
+    status >= 500
+      ? env.NODE_ENV === 'production'
+        ? 'Sunucu hatası'
+        : err?.message ?? 'Internal server error'
+      : err?.message ?? 'İstek işlenemedi';
   res.status(status).json({ error: message });
 }

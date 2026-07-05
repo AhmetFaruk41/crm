@@ -22,6 +22,14 @@ export function formatMoney(n: number | null | undefined, currency = '₺'): str
   return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(n)) + ' ' + currency;
 }
 
+export function formatSize(bytes: number | null | undefined): string {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
 export function truncate(s: string | null | undefined, len = 80): string {
   if (!s) return '';
   const clean = String(s).replace(/<[^>]*>/g, '');

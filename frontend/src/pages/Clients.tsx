@@ -7,23 +7,19 @@ import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
+import { useList } from '../hooks/useList';
 import { Field } from '../components/Field';
 import type { Client } from '../types';
 
 export function ClientsList() {
-  const [rows, setRows] = useState<Client[] | null>(null);
-
-  async function load() {
-    const r = await api.get<Client[]>('/clients');
-    setRows(r.data);
-  }
-  useEffect(() => { load(); }, []);
+  const { data: rows, loading, error, reload } = useList<Client[]>('/clients');
 
   async function del(id: number) {
     if (!await confirm({ message: 'Müşteri silinsin mi?', danger: true, confirmLabel: 'Sil' })) return;
     await api.delete(`/clients/${id}`);
     toast.success('Silindi');
-    load();
+    reload();
   }
 
   const cols: Column<Client>[] = [
@@ -43,7 +39,8 @@ export function ClientsList() {
     ) },
   ];
 
-  if (!rows) return <Loading />;
+  if (loading) return <Loading />;
+  if (error || !rows) return <ErrorState onRetry={reload} />;
   return (
     <div>
       <PageHeader

@@ -7,6 +7,8 @@ import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
+import { useList } from '../hooks/useList';
 import { Field } from '../components/Field';
 import { formatDate, formatMoney, truncate } from '../lib/format';
 import type { Job, OfferTemplateMatter, OfferTemplateRow } from '../types';
@@ -16,26 +18,20 @@ function emptyMatter(): OfferTemplateMatter {
 }
 
 export function OfferTemplatesList() {
-  const [rows, setRows] = useState<OfferTemplateRow[] | null>(null);
-
-  async function load() {
-    const r = await api.get<OfferTemplateRow[]>('/offer-templates');
-    setRows(r.data);
-  }
-  useEffect(() => { load(); }, []);
+  const { data: rows, loading, error, reload } = useList<OfferTemplateRow[]>('/offer-templates');
 
   async function del(id: number) {
     if (!await confirm({ message: 'Bu şablonu silmek istediğinize emin misiniz?', danger: true, confirmLabel: 'Sil' })) return;
     await api.delete(`/offer-templates/${id}`);
     toast.success('Şablon silindi');
-    load();
+    reload();
   }
 
   async function duplicate(id: number) {
     if (!await confirm({ message: 'Bu şablon kopyalansın mı?', confirmLabel: 'Kopyala' })) return;
     await api.post(`/offer-templates/${id}/duplicate`);
     toast.success('Şablon kopyalandı');
-    load();
+    reload();
   }
 
   const cols: Column<OfferTemplateRow>[] = [
@@ -68,7 +64,8 @@ export function OfferTemplatesList() {
     ) },
   ];
 
-  if (!rows) return <Loading />;
+  if (loading) return <Loading />;
+  if (error || !rows) return <ErrorState onRetry={reload} />;
   return (
     <div>
       <PageHeader

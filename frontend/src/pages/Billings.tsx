@@ -5,19 +5,18 @@ import toast from 'react-hot-toast';
 import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
+import { useList } from '../hooks/useList';
 import { Field } from '../components/Field';
 import { confirm } from '../components/ConfirmDialog';
 import { formatDate, formatDateTime, formatMoney, todayISO } from '../lib/format';
 import type { ProjectRow } from '../types';
 
 export function BillingsList() {
-  const [rows, setRows] = useState<ProjectRow[] | null>(null);
+  const { data: rows, loading, error, reload } = useList<ProjectRow[]>('/projects');
 
-  useEffect(() => {
-    api.get<ProjectRow[]>('/projects').then((r) => setRows(r.data));
-  }, []);
-
-  if (!rows) return <Loading />;
+  if (loading) return <Loading />;
+  if (error || !rows) return <ErrorState onRetry={reload} />;
   return (
     <div>
       <PageHeader title="Proje Ödemeleri" crumbs={[{ label: 'Anasayfa', to: '/' }, { label: 'Ödemeler' }]} />

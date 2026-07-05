@@ -10,6 +10,8 @@ import PageHeader from '../components/PageHeader';
 import DataTable, { type Column } from '../components/DataTable';
 import { confirm } from '../components/ConfirmDialog';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
+import { useList } from '../hooks/useList';
 import { Field } from '../components/Field';
 import { formatDate } from '../lib/format';
 import type { DomainPricing, DomainRow } from '../types';
@@ -45,33 +47,27 @@ function daysUntil(date: Date): number {
 type FilterKey = 'all' | 'customer' | 'pending' | 'soon' | 'inactive';
 
 export function DomainsList() {
-  const [rows, setRows] = useState<DomainRow[] | null>(null);
+  const { data: rows, loading, error, reload } = useList<DomainRow[]>('/domains');
   const [filter, setFilter] = useState<FilterKey>('all');
   const [search, setSearch] = useState('');
-
-  async function load() {
-    const r = await api.get<DomainRow[]>('/domains');
-    setRows(r.data);
-  }
-  useEffect(() => { load(); }, []);
 
   async function pay(id: number) {
     if (!await confirm({ message: 'Ödeme yapıldı olarak işaretlensin mi?', confirmLabel: 'Evet' })) return;
     await api.put(`/domains/${id}/pay`);
     toast.success('Ödeme işaretlendi');
-    load();
+    reload();
   }
   async function markPending(id: number) {
     if (!await confirm({ message: 'Yenileme bekliyor durumuna alınsın mı?', confirmLabel: 'Evet' })) return;
     await api.put(`/domains/${id}/unpay`);
     toast.success('Yenileme bekliyor olarak işaretlendi');
-    load();
+    reload();
   }
   async function del(id: number) {
     if (!await confirm({ message: 'Domain silinsin mi?', danger: true, confirmLabel: 'Sil' })) return;
     await api.delete(`/domains/${id}`);
     toast.success('Silindi');
-    load();
+    reload();
   }
 
   const enriched = useMemo(() => (rows ?? []).map((r) => {
@@ -191,7 +187,8 @@ export function DomainsList() {
     { key: 'inactive', label: 'Müşteri Değil', count: summary.inactive },
   ];
 
-  if (!rows) return <Loading />;
+  if (loading) return <Loading />;
+  if (error || !rows) return <ErrorState onRetry={reload} />;
 
   return (
     <div>

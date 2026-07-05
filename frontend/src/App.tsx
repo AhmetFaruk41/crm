@@ -18,12 +18,20 @@ import { PersonnelList, PersonnelForm } from './pages/Personnel';
 import { DomainsList, DomainForm } from './pages/Domains';
 import Finance from './pages/Finance';
 import { LeadsList, LeadDetailModal, LeadForm } from './pages/Leads';
-import { BlogList, BlogForm } from './pages/Blog';
+import Drive from './pages/Drive';
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+function AdminOnly({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.level !== 1) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -80,17 +88,15 @@ export default function App() {
           <Route path="personnel/new" element={<PersonnelForm />} />
           <Route path="personnel/:id/edit" element={<PersonnelForm />} />
 
-          <Route path="users" element={<UsersList />} />
-          <Route path="users/new" element={<UserForm />} />
-          <Route path="users/:id/edit" element={<UserForm />} />
+          <Route path="users" element={<AdminOnly><UsersList /></AdminOnly>} />
+          <Route path="users/new" element={<AdminOnly><UserForm /></AdminOnly>} />
+          <Route path="users/:id/edit" element={<AdminOnly><UserForm /></AdminOnly>} />
 
           <Route path="domains" element={<DomainsList />} />
           <Route path="domains/new" element={<DomainForm />} />
           <Route path="domains/:id/edit" element={<DomainForm />} />
 
-          <Route path="blog" element={<BlogList />} />
-          <Route path="blog/new" element={<BlogForm />} />
-          <Route path="blog/:id/edit" element={<BlogForm />} />
+          <Route path="drive" element={<Drive />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

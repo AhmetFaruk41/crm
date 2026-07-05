@@ -10,7 +10,9 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 const UPLOAD_DIR = path.resolve('uploads/clients');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-const ALLOWED_MIMES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml', 'image/gif']);
+// SVG dahil DEĞİL: SVG içine gömülü script /uploads'tan inline servis
+// edildiğinde aynı origin'de çalışır (depolanmış XSS). Raster formatlar güvenli.
+const ALLOWED_MIMES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']);
 
 const storage = multer.diskStorage({
   destination: UPLOAD_DIR,
@@ -24,7 +26,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_MIMES.has(file.mimetype)) cb(null, true);
-    else cb(new Error('Sadece PNG, JPG, WEBP, SVG ve GIF formatları kabul edilir'));
+    else cb(new Error('Sadece PNG, JPG, WEBP ve GIF formatları kabul edilir'));
   },
 });
 

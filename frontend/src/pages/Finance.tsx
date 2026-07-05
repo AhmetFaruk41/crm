@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
 import { Field } from '../components/Field';
 import { confirm } from '../components/ConfirmDialog';
 import { formatDate, formatMoney, todayISO } from '../lib/format';
@@ -65,15 +66,21 @@ export default function Finance() {
   const [entry, setEntry] = useState(emptyEntry());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
 
   async function load(nextFilters = filters) {
-    const params = new URLSearchParams();
-    if (nextFilters.from) params.set('from', nextFilters.from);
-    if (nextFilters.to) params.set('to', nextFilters.to);
-    if (nextFilters.type) params.set('type', nextFilters.type);
-    if (nextFilters.category) params.set('category', nextFilters.category);
-    const response = await api.get<FinanceData>(`/finance?${params.toString()}`);
-    setData(response.data);
+    setError(false);
+    try {
+      const params = new URLSearchParams();
+      if (nextFilters.from) params.set('from', nextFilters.from);
+      if (nextFilters.to) params.set('to', nextFilters.to);
+      if (nextFilters.type) params.set('type', nextFilters.type);
+      if (nextFilters.category) params.set('category', nextFilters.category);
+      const response = await api.get<FinanceData>(`/finance?${params.toString()}`);
+      setData(response.data);
+    } catch {
+      setError(true);
+    }
   }
 
   useEffect(() => { load(); }, []);
@@ -145,6 +152,7 @@ export default function Finance() {
     expenses: data?.categories.filter((item) => item.transaction_type === 'expense') ?? [],
   }), [data]);
 
+  if (error) return <ErrorState onRetry={() => { setError(false); load(); }} />;
   if (!data) return <Loading />;
 
   return (

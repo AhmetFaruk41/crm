@@ -67,7 +67,11 @@ CREATE TABLE leads (
   INDEX (temperature),
   INDEX (next_follow_up_date),
   INDEX (converted_client_id),
-  INDEX (converted_offer_id)
+  INDEX (converted_offer_id),
+  INDEX idx_leads_user (user_id),
+  CONSTRAINT fk_leads_conv_client FOREIGN KEY (converted_client_id) REFERENCES clients(id) ON DELETE SET NULL,
+  CONSTRAINT fk_leads_conv_offer  FOREIGN KEY (converted_offer_id)  REFERENCES offers(id)  ON DELETE SET NULL,
+  CONSTRAINT fk_leads_user        FOREIGN KEY (user_id)             REFERENCES users(id)   ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS lead_activities;
@@ -82,7 +86,10 @@ CREATE TABLE lead_activities (
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX (lead_id),
   INDEX (activity_date),
-  INDEX (next_action_date)
+  INDEX (next_action_date),
+  INDEX idx_lead_act_user (user_id),
+  CONSTRAINT fk_lead_act_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE,
+  CONSTRAINT fk_lead_act_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS lead_tags;
@@ -100,7 +107,9 @@ CREATE TABLE lead_tag_assignments (
   tag_id INT(11) NOT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (lead_id, tag_id),
-  INDEX idx_lead_tag_tag (tag_id)
+  INDEX idx_lead_tag_tag (tag_id),
+  CONSTRAINT fk_lta_lead FOREIGN KEY (lead_id) REFERENCES leads(id)     ON DELETE CASCADE,
+  CONSTRAINT fk_lta_tag  FOREIGN KEY (tag_id)  REFERENCES lead_tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS offers;
@@ -120,7 +129,12 @@ CREATE TABLE offers (
   main_offer_id INT(11) DEFAULT NULL,
   INDEX (offer_id),
   INDEX (client_id),
-  INDEX (lead_id)
+  INDEX (lead_id),
+  INDEX idx_offers_user (user_id),
+  INDEX idx_offers_main (main_offer_id),
+  CONSTRAINT fk_offers_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_offers_lead   FOREIGN KEY (lead_id)   REFERENCES leads(id)   ON DELETE SET NULL,
+  CONSTRAINT fk_offers_user   FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS offers_matters;
@@ -132,10 +146,11 @@ CREATE TABLE offers_matters (
   matter_description TEXT NOT NULL,
   matter_extra TEXT,
   matter_unit INT(11) NOT NULL DEFAULT 1,
-  matter_old_price FLOAT DEFAULT NULL,
-  matter_price FLOAT NOT NULL,
+  matter_old_price DECIMAL(12,2) DEFAULT NULL,
+  matter_price DECIMAL(12,2) NOT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX (offer_id)
+  INDEX (offer_id),
+  CONSTRAINT fk_offers_matters_offer FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS agreements;
@@ -151,7 +166,10 @@ CREATE TABLE agreements (
   price DECIMAL(12,2) DEFAULT NULL,
   kdv INT(11) NOT NULL DEFAULT 20,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX (offer_id)
+  INDEX (offer_id),
+  INDEX idx_agreements_client (client_id),
+  CONSTRAINT fk_agreements_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT,
+  CONSTRAINT fk_agreements_offer  FOREIGN KEY (offer_id)  REFERENCES offers(id)  ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS agreements_matters;
@@ -166,7 +184,9 @@ CREATE TABLE agreements_matters (
   matter_unit INT(11) NOT NULL DEFAULT 1,
   matter_price DECIMAL(12,2) NOT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX (offer_id)
+  INDEX (offer_id),
+  INDEX idx_agr_matters_offer_matter (offer_matter_id),
+  CONSTRAINT fk_agr_matters_offer FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS projects;
@@ -188,7 +208,12 @@ CREATE TABLE projects (
   completed_at DATETIME DEFAULT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
-  UNIQUE KEY unique_project_offer (offer_id)
+  UNIQUE KEY unique_project_offer (offer_id),
+  INDEX idx_projects_client (client_id),
+  INDEX idx_projects_personel (personel_id),
+  CONSTRAINT fk_projects_client   FOREIGN KEY (client_id)   REFERENCES clients(id)  ON DELETE RESTRICT,
+  CONSTRAINT fk_projects_offer    FOREIGN KEY (offer_id)    REFERENCES offers(id)   ON DELETE RESTRICT,
+  CONSTRAINT fk_projects_personel FOREIGN KEY (personel_id) REFERENCES personel(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS projects_billings;
@@ -211,7 +236,9 @@ CREATE TABLE project_activities (
   description VARCHAR(500) NOT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX (project_id),
-  INDEX (user_id)
+  INDEX (user_id),
+  CONSTRAINT fk_proj_act_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  CONSTRAINT fk_proj_act_user    FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS project_stages;
@@ -227,7 +254,8 @@ CREATE TABLE project_stages (
   completed_at DATETIME DEFAULT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX (project_id)
+  INDEX (project_id),
+  CONSTRAINT fk_proj_stages_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS project_tasks;
@@ -246,7 +274,10 @@ CREATE TABLE project_tasks (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX (project_id),
   INDEX (stage_id),
-  INDEX (personel_id)
+  INDEX (personel_id),
+  CONSTRAINT fk_proj_tasks_project  FOREIGN KEY (project_id)  REFERENCES projects(id)       ON DELETE CASCADE,
+  CONSTRAINT fk_proj_tasks_stage    FOREIGN KEY (stage_id)    REFERENCES project_stages(id) ON DELETE CASCADE,
+  CONSTRAINT fk_proj_tasks_personel FOREIGN KEY (personel_id) REFERENCES personel(id)       ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS project_payment_plans;
@@ -259,7 +290,8 @@ CREATE TABLE project_payment_plans (
   status INT(11) NOT NULL DEFAULT 0,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX (project_id)
+  INDEX (project_id),
+  CONSTRAINT fk_ppp_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS finance_transactions;
@@ -278,7 +310,9 @@ CREATE TABLE finance_transactions (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX (transaction_type),
   INDEX (transaction_date),
-  INDEX (category)
+  INDEX (category),
+  INDEX idx_finance_user (user_id),
+  CONSTRAINT fk_finance_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS domains;
@@ -322,19 +356,71 @@ CREATE TABLE offer_template_matters (
   matter_description TEXT NOT NULL,
   matter_extra TEXT,
   matter_unit INT(11) NOT NULL DEFAULT 1,
-  matter_old_price FLOAT DEFAULT NULL,
-  matter_price FLOAT NOT NULL DEFAULT 0,
+  matter_old_price DECIMAL(12,2) DEFAULT NULL,
+  matter_price DECIMAL(12,2) NOT NULL DEFAULT 0,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX (template_id)
+  INDEX (template_id),
+  CONSTRAINT fk_otm_template FOREIGN KEY (template_id) REFERENCES offer_templates(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS domain_pricing;
 CREATE TABLE domain_pricing (
   id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
-  monthly_price FLOAT NOT NULL DEFAULT 0,
-  full_price FLOAT NOT NULL DEFAULT 0,
-  kdv FLOAT NOT NULL DEFAULT 20
+  monthly_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  full_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  kdv DECIMAL(5,2) NOT NULL DEFAULT 20
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS drive_file_tags;
+DROP TABLE IF EXISTS drive_files;
+DROP TABLE IF EXISTS drive_tags;
+DROP TABLE IF EXISTS drive_folders;
+
+CREATE TABLE drive_folders (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  parent_id INT(11) DEFAULT NULL,
+  name VARCHAR(255) NOT NULL,
+  created_by INT(11) DEFAULT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (parent_id),
+  INDEX (created_by),
+  CONSTRAINT fk_drive_folder_parent FOREIGN KEY (parent_id) REFERENCES drive_folders(id) ON DELETE CASCADE,
+  CONSTRAINT fk_drive_folder_user   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE drive_files (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  folder_id INT(11) DEFAULT NULL,
+  original_name VARCHAR(255) NOT NULL,
+  storage_key VARCHAR(255) NOT NULL,
+  mime VARCHAR(150) DEFAULT NULL,
+  size BIGINT NOT NULL DEFAULT 0,
+  checksum CHAR(64) DEFAULT NULL,
+  uploaded_by INT(11) DEFAULT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (folder_id),
+  INDEX (uploaded_by),
+  CONSTRAINT fk_drive_file_folder FOREIGN KEY (folder_id) REFERENCES drive_folders(id) ON DELETE CASCADE,
+  CONSTRAINT fk_drive_file_user   FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE drive_tags (
+  id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(80) NOT NULL,
+  color VARCHAR(20) NOT NULL DEFAULT 'slate',
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_drive_tag_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE drive_file_tags (
+  file_id INT(11) NOT NULL,
+  tag_id INT(11) NOT NULL,
+  create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (file_id, tag_id),
+  INDEX idx_drive_file_tag_tag (tag_id),
+  CONSTRAINT fk_dft_file FOREIGN KEY (file_id) REFERENCES drive_files(id) ON DELETE CASCADE,
+  CONSTRAINT fk_dft_tag  FOREIGN KEY (tag_id)  REFERENCES drive_tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;
