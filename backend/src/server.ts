@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import { env } from './config/env.js';
 import { errorHandler, notFound } from './middleware/error.js';
-import { requireAuth } from './middleware/auth.js';
+import { requireAuth, requireAdmin } from './middleware/auth.js';
 
 import { authRouter } from './routes/auth.js';
 import { usersRouter } from './routes/users.js';
@@ -46,7 +46,7 @@ app.get('/api/resources/web-sitesi-proje-bilgi-formu', requireAuth, (_req, res) 
     'Web Sitesi Proje Bilgi Formu.docx'
   );
 });
-app.use('/api/users', requireAuth, usersRouter);
+app.use('/api/users', requireAuth, requireAdmin, usersRouter);
 app.use('/api/personnel', requireAuth, personnelRouter);
 app.use('/api/jobs', requireAuth, jobsRouter);
 app.use('/api/clients', requireAuth, clientsRouter);

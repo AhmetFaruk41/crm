@@ -33,3 +33,10 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
     next(new HttpError(401, 'Geçersiz oturum'));
   }
 }
+
+// Yönetici (level=1) gerektiren uçlar için. requireAuth'tan SONRA mount edilmeli.
+export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
+  if (!req.user) return next(new HttpError(401, 'Yetkisiz erişim'));
+  if (req.user.level !== 1) return next(new HttpError(403, 'Bu işlem için yönetici yetkisi gerekli'));
+  next();
+}
