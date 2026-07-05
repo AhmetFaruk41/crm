@@ -29,10 +29,10 @@ mysql -u root -p noname_crm < backend/src/db/migrations/001_project_tracking_pha
 mysql -u root -p noname_crm < backend/src/db/migrations/002_project_workflow_and_payment_plans.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/003_finance_transactions.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/004_sales_leads_pipeline.sql
-mysql -u root -p noname_crm < backend/src/db/migrations/007_blog_posts.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/008_foreign_keys_and_indexes.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/009_money_decimal.sql
 mysql -u root -p noname_crm < backend/src/db/migrations/010_drive.sql
+mysql -u root -p noname_crm < backend/src/db/migrations/011_drop_blog.sql
 ```
 
 > `008` foreign key ve eksik index ekler; canlıda çalıştırmadan önce dosya
@@ -41,9 +41,6 @@ mysql -u root -p noname_crm < backend/src/db/migrations/010_drive.sql
 
 Canlı veritabanı migration ve aday içe aktarma güvenlik adımları:
 [`docs/production-data-safety.md`](docs/production-data-safety.md).
-
-Blog modülünün CAWELT sitesiyle entegrasyonu (API, webhook, env, nginx):
-[`docs/blog-integration.md`](docs/blog-integration.md).
 
 Geliştirme yol haritası ve tamamlanan adımlar:
 [`docs/projects-roadmap.md`](docs/projects-roadmap.md).
@@ -80,4 +77,4 @@ npm run dev          # http://localhost:5173
 - **Personel** – proje atanan kişiler
 - **Kullanıcılar** – panel kullanıcıları, yetki düzeyi
 - **Domainler** – domain takibi, abonelik fiyatlandırma, ödeme durumu
-- **Blog** – CAWELT sitesinin blogunu besleyen yazılar (Markdown editör, taslak/yayın, SEO meta + SSS); kaydedince site webhook ile anında tazelenir ([`docs/blog-integration.md`](docs/blog-integration.md))
+- **Drive** – serbest dosya arşivi: iç içe klasörler, çoklu yükleme, renkli etiketler, ada/etikete göre arama; indirmeler kimlik doğrulamalı

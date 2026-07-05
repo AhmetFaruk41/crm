@@ -21,7 +21,6 @@ import { dashboardRouter } from './routes/dashboard.js';
 import { pdfRouter } from './routes/pdf.js';
 import { financeRouter } from './routes/finance.js';
 import { leadsRouter } from './routes/leads.js';
-import { blogAdminRouter, publicBlogRouter } from './routes/blog.js';
 import { driveRouter } from './routes/drive.js';
 
 const app = express();
@@ -33,7 +32,7 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Static for client logos / blog covers. nosniff + restrictive CSP: yüklenen
+// Static for client logos. nosniff + restrictive CSP: yüklenen
 // bir dosya beklenmedik bir tipe (ör. HTML) sniff'lenip aynı origin'de script
 // çalıştıramasın diye. Yükleme filtresi zaten SVG/HTML'i reddediyor.
 app.use(
@@ -51,10 +50,6 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 // Brute-force koruması: giriş denemelerini IP başına sınırla.
 app.use('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }));
 app.use('/api/auth', authRouter);
-
-// Public blog API — CAWELT sitesi sunucu-sunucuya bundan okur (yetki yok,
-// yalnızca yayınlanan yazılar). Auth duvarından ÖNCE mount edilir.
-app.use('/api/public/blog', publicBlogRouter);
 
 // All other routes require auth
 app.get('/api/resources/web-sitesi-proje-bilgi-formu', requireAuth, (_req, res) => {
@@ -76,7 +71,6 @@ app.use('/api/domains', requireAuth, domainsRouter);
 app.use('/api/dashboard', requireAuth, dashboardRouter);
 app.use('/api/finance', requireAuth, financeRouter);
 app.use('/api/leads', requireAuth, leadsRouter);
-app.use('/api/blog', requireAuth, blogAdminRouter);
 app.use('/api/drive', requireAuth, driveRouter);
 app.use('/api/pdf', requireAuth, pdfRouter);
 

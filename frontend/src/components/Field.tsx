@@ -5,8 +5,8 @@ export function Field({ label, children, className = '' }: { label: string; chil
 
   // Erişilebilirlik: etiketi input'a programatik olarak bağla. Child tek bir
   // native form elemanıysa (input/select/textarea) id'yi ona enjekte edip
-  // htmlFor kur. MDEditor/CoverUploader gibi karmaşık bileşenlerde eski
-  // davranış korunur (bağlama yapılmaz, regresyon yok).
+  // htmlFor kur. Native olmayan (özel bileşen) child'larda eski davranış
+  // korunur (bağlama yapılmaz, regresyon yok).
   let control = children;
   let htmlFor: string | undefined;
   if (isValidElement(children)) {

@@ -18,7 +18,6 @@ import { PersonnelList, PersonnelForm } from './pages/Personnel';
 import { DomainsList, DomainForm } from './pages/Domains';
 import Finance from './pages/Finance';
 import { LeadsList, LeadDetailModal, LeadForm } from './pages/Leads';
-import { BlogList, BlogForm } from './pages/Blog';
 import Drive from './pages/Drive';
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -98,10 +97,6 @@ export default function App() {
           <Route path="domains/:id/edit" element={<DomainForm />} />
 
           <Route path="drive" element={<Drive />} />
-
-          <Route path="blog" element={<BlogList />} />
-          <Route path="blog/new" element={<BlogForm />} />
-          <Route path="blog/:id/edit" element={<BlogForm />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

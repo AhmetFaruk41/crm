@@ -12,7 +12,6 @@ import {
   Building2,
   Wallet,
   UserRoundSearch,
-  Newspaper,
   HardDrive,
   X,
   type LucideIcon,
@@ -58,7 +57,6 @@ const groups: NavGroup[] = [
     label: 'İçerik',
     items: [
       { to: '/drive', label: 'Drive', icon: HardDrive },
-      { to: '/blog', label: 'Blog', icon: Newspaper },
     ],
   },
   {
