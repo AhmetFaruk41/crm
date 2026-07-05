@@ -149,8 +149,8 @@ CREATE TABLE offers_matters (
   matter_old_price DECIMAL(12,2) DEFAULT NULL,
   matter_price DECIMAL(12,2) NOT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX (offer_id),
-  CONSTRAINT fk_offers_matters_offer FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE
+  -- offer_id iş numarasıdır (offers.offer_id, tekil değil) → FK kurulamaz.
+  INDEX (offer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS agreements;
@@ -166,10 +166,10 @@ CREATE TABLE agreements (
   price DECIMAL(12,2) DEFAULT NULL,
   kdv INT(11) NOT NULL DEFAULT 20,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- offer_id iş numarasıdır → FK yok; client_id gerçek PK referansıdır.
   INDEX (offer_id),
   INDEX idx_agreements_client (client_id),
-  CONSTRAINT fk_agreements_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT,
-  CONSTRAINT fk_agreements_offer  FOREIGN KEY (offer_id)  REFERENCES offers(id)  ON DELETE RESTRICT
+  CONSTRAINT fk_agreements_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS agreements_matters;
@@ -184,9 +184,9 @@ CREATE TABLE agreements_matters (
   matter_unit INT(11) NOT NULL DEFAULT 1,
   matter_price DECIMAL(12,2) NOT NULL,
   create_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- offer_id iş numarasıdır (offers.offer_id, tekil değil) → FK kurulamaz.
   INDEX (offer_id),
-  INDEX idx_agr_matters_offer_matter (offer_matter_id),
-  CONSTRAINT fk_agr_matters_offer FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE
+  INDEX idx_agr_matters_offer_matter (offer_matter_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS projects;
@@ -209,10 +209,10 @@ CREATE TABLE projects (
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   UNIQUE KEY unique_project_offer (offer_id),
+  -- offer_id iş numarasıdır → FK yok; client_id/personel_id gerçek PK referanslarıdır.
   INDEX idx_projects_client (client_id),
   INDEX idx_projects_personel (personel_id),
   CONSTRAINT fk_projects_client   FOREIGN KEY (client_id)   REFERENCES clients(id)  ON DELETE RESTRICT,
-  CONSTRAINT fk_projects_offer    FOREIGN KEY (offer_id)    REFERENCES offers(id)   ON DELETE RESTRICT,
   CONSTRAINT fk_projects_personel FOREIGN KEY (personel_id) REFERENCES personel(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

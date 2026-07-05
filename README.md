@@ -37,7 +37,9 @@ mysql -u root -p noname_crm < backend/src/db/migrations/011_drop_blog.sql
 
 > `008` foreign key ve eksik index ekler; canlıda çalıştırmadan önce dosya
 > başındaki öksüz-kayıt kontrol sorgularını koştur. `009` para alanlarını
-> FLOAT'tan DECIMAL'e çevirir.
+> FLOAT'tan DECIMAL'e çevirir. `012` YALNIZCA `008` iş-numarası kaynaklı bir
+> hatayla yarıda kaldıysa çalıştırılır (kalan doğru FK'ları tamamlar); taze
+> kurulumlarda gerekmez.
 
 Canlı veritabanı migration ve aday içe aktarma güvenlik adımları:
 [`docs/production-data-safety.md`](docs/production-data-safety.md).

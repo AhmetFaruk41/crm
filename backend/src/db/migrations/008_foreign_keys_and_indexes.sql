@@ -69,10 +69,10 @@ ALTER TABLE project_tasks
 --      SELECT COUNT(*) FROM project_tasks       WHERE stage_id       NOT IN (SELECT id FROM project_stages);
 --      SELECT COUNT(*) FROM project_payment_plans WHERE project_id   NOT IN (SELECT id FROM projects);
 -- ---------------------------------------------------------------------------
-ALTER TABLE offers_matters
-  ADD CONSTRAINT fk_offers_matters_offer FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE;
-ALTER TABLE agreements_matters
-  ADD CONSTRAINT fk_agr_matters_offer FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE;
+-- NOT: offers_matters.offer_id ve agreements_matters.offer_id, offers'ın PK'sı
+-- (id) DEĞİL, iş numarası offers.offer_id ile eşleşir (uygulama
+-- `WHERE offer_id = ?` ile bağlar). offers.offer_id tekil değildir (revizyonlar
+-- aynı numarayı paylaşır), bu yüzden bu ilişkiye FK KURULAMAZ. Bilerek atlandı.
 ALTER TABLE lead_activities
   ADD CONSTRAINT fk_lead_act_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE;
 ALTER TABLE lead_tag_assignments
@@ -96,17 +96,16 @@ ALTER TABLE project_payment_plans
 --    ÖKSÜZ KONTROL (0 satır dönmeli):
 --      SELECT COUNT(*) FROM offers      WHERE client_id   NOT IN (SELECT id FROM clients);
 --      SELECT COUNT(*) FROM agreements  WHERE client_id   NOT IN (SELECT id FROM clients);
---      SELECT COUNT(*) FROM agreements  WHERE offer_id    NOT IN (SELECT id FROM offers);
 --      SELECT COUNT(*) FROM projects    WHERE client_id   NOT IN (SELECT id FROM clients);
---      SELECT COUNT(*) FROM projects    WHERE offer_id    NOT IN (SELECT id FROM offers);
 --      SELECT COUNT(*) FROM projects    WHERE personel_id NOT IN (SELECT id FROM personel);
+-- NOT: agreements.offer_id ve projects.offer_id de iş numarası offers.offer_id'ye
+-- bağlanır (yukarıdaki nedenle FK kurulamaz), bu yüzden yalnızca client/personel
+-- referanslarına FK eklenir.
 -- ---------------------------------------------------------------------------
 ALTER TABLE offers
   ADD CONSTRAINT fk_offers_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT;
 ALTER TABLE agreements
-  ADD CONSTRAINT fk_agreements_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT,
-  ADD CONSTRAINT fk_agreements_offer  FOREIGN KEY (offer_id)  REFERENCES offers(id)  ON DELETE RESTRICT;
+  ADD CONSTRAINT fk_agreements_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT;
 ALTER TABLE projects
   ADD CONSTRAINT fk_projects_client   FOREIGN KEY (client_id)   REFERENCES clients(id)  ON DELETE RESTRICT,
-  ADD CONSTRAINT fk_projects_offer    FOREIGN KEY (offer_id)    REFERENCES offers(id)   ON DELETE RESTRICT,
   ADD CONSTRAINT fk_projects_personel FOREIGN KEY (personel_id) REFERENCES personel(id) ON DELETE RESTRICT;
